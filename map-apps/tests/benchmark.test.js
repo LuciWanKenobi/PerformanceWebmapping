@@ -153,7 +153,7 @@ test('runner exports aggregate workload and per-map dimensions for 20 synchroniz
   adapter.viewports = () => Array.from({ length: 20 }, (_, i) => ({ mapIndex: i + 1, width: 200, height: 150 }));
   const [row] = await runBenchmark(adapter, { ...options, mapCount: 20, repetitions: 1, warmup: false },
     { signal: new AbortController().signal });
-  assert.equal(row.schemaVersion, 7);
+  assert.equal(row.schemaVersion, 8);
   assert.equal(row.mapCount, 20);
   assert.equal(row.pointsPerMap, 200);
   assert.equal(row.totalPoints, 4000);
@@ -280,7 +280,7 @@ test('mixed workload replaces points and forecast, exporting each measured phase
     timeChange: { fraction: 0.5, points: true, rasters: true },
   }, { signal: new AbortController().signal });
   const row = rows[0];
-  assert.equal(row.schemaVersion, 7);
+  assert.equal(row.schemaVersion, 8);
   assert.equal(row.pointLayerCount, 2);
   assert.equal(row.rasterLayerCount, 2);
   assert.match(row.rasterResolutionPolicy, /source-native ceiling/);
@@ -591,4 +591,69 @@ test('failed or stopped initialization produces no trial row and still restores 
     assert.equal(saved, 0); assert.equal(adapter.calls.adds, 0);
     assert.equal(adapter.calls.restores, 1); assert.equal(pending.size, 0);
   }
+});
+
+test('PNG-only color restyle is unsupported with null time, no adapter calls and no restyle requests', async (t) => {
+  fakeBrowser(t);
+  const adapter = fakeAdapter();
+  adapter.addPoints = (data) => assert.equal(data.length, 0);
+  adapter.addRasters = () => {};
+  adapter.settleRasters = (signal) => afterFrames(1, signal);
+  adapter.restyleRasters = () => assert.fail('Fixed PNGs must not be restyled');
+  const [row] = await runBenchmark(adapter, { ...options, layerCount: 0, repetitions: 1, warmup: false,
+    rasterLayers: [raster('t_2m', undefined, 'xyz')], colorRestyle: true },
+  { signal: new AbortController().signal });
+  assert.equal(row.colorRestyleStatus, 'unsupported');
+  assert.equal(row.colorRestyleReadyMs, null);
+  assert.equal(row.colorRestyleSubmitMs, null);
+  assert.equal(row.colorRestyleReadySignal, null);
+  assert.equal(row.colorRestyleNetwork, null);
+  assert.equal(row.colorRestyleFrameSamples, 0);
+  assert.equal(row.colorRestyleAppliedRasterLayerInstances, 0);
+  assert.equal(row.colorRestyleSkippedRasterLayerInstances, 1);
+  assert.equal(row.colorRestyleLayers[0].supported, false);
+  assert.equal(row.colorRestyleLayers[0].style, null);
+  assert.match(toCsv([row]), /unsupported/);
+});
+
+test('mixed PNG restyles are partial, preserve forecast changes and count skipped instances across maps', async (t) => {
+  fakeBrowser(t);
+  const adapter = fakeAdapter();
+  adapter.mapCount = () => 3;
+  let restyles = 0, active;
+  adapter.addRasters = (requests) => { active = requests; };
+  adapter.settleRasters = (signal) => afterFrames(1, signal);
+  adapter.restylePoints = () => {};
+  adapter.restyleRasters = () => { restyles++; };
+  const initial = [raster('t_2m', undefined, 'xyz'), raster('clct', undefined, 'wms')];
+  const next = initial.map(({ layer, mode }) => raster(layer.variable, '2026-10-05T06:00:00Z', mode));
+  const [row] = await runBenchmark(adapter, { ...options, mapCount: 3, repetitions: 1, warmup: false,
+    rasterLayers: initial, nextRasterLayers: next, colorRestyle: true,
+    timeChange: { fraction: 0.5, points: false, rasters: true } }, { signal: new AbortController().signal });
+  assert.equal(active, next);
+  assert.equal(restyles, 1);
+  assert.equal(row.colorRestyleStatus, 'partial');
+  assert.ok(row.colorRestyleReadyMs > 0);
+  assert.equal(row.colorRestyleAppliedPointLayerInstances, options.layerCount * 3);
+  assert.equal(row.colorRestyleAppliedRasterLayerInstances, 3);
+  assert.equal(row.colorRestyleSkippedRasterLayerInstances, 3);
+  assert.equal(row.colorRestyleLayers[0].id, next[0].layer.id);
+  assert.equal(row.colorRestyleLayers[0].style, null);
+  assert.equal(row.colorRestyleLayers[1].supported, true);
+  assert.equal(row.colorRestyleLayers[1].method, 'server recolor and tile fetch');
+});
+
+test('points plus PNGs restyle points only without requiring a raster restyle adapter', async (t) => {
+  fakeBrowser(t);
+  const adapter = fakeAdapter();
+  adapter.addRasters = () => {};
+  adapter.settleRasters = async () => {};
+  let points = 0;
+  adapter.restylePoints = () => { points++; };
+  const [row] = await runBenchmark(adapter, { ...options, repetitions: 1, warmup: false,
+    rasterLayers: [raster('t_2m', undefined, 'xyz')], colorRestyle: true }, { signal: new AbortController().signal });
+  assert.equal(points, 1);
+  assert.equal(row.colorRestyleStatus, 'partial');
+  assert.equal(row.colorRestyleAppliedRasterLayerInstances, 0);
+  assert.ok(row.colorRestyleReadyMs > 0);
 });

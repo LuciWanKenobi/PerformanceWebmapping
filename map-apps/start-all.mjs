@@ -40,6 +40,9 @@ export async function probeService(spec) {
     if (spec.service === 'wms' && JSON.stringify(health.colorTables) !== JSON.stringify(COLOR_TABLES)) {
       throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; matching parameter color tables are required. Stop the existing server, then rerun npm run start:all.');
     }
+    if (spec.service === 'wms' && (health.xyzDelivery !== 'precomputed-only' || health.xyzColorRestyleSupported !== false)) {
+      throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; PNG tiles must be precomputed and read-only. Stop the existing server, then rerun npm run start:all.');
+    }
     if (['cog', 'wms'].includes(spec.service)) {
       const metrics = await fetch(spec.url + '/metrics', { signal: AbortSignal.timeout(1500) });
       if (!metrics.ok || !(await metrics.json()).cacheIsolationSupported) throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; cache isolation is required.');

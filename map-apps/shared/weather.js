@@ -22,7 +22,7 @@ export function gribUrl(layer) {
 }
 
 export function weatherTileUrl(layer, mode) {
-  if (mode === 'xyz') return rasterUrl(`${WMS_SERVER}/tiles/${encodeURIComponent(layer.id)}/{z}/{x}/{y}.png${layer.colorTableStyle ? '?style=' + encodeURIComponent(layer.colorTableStyle) : ''}`, layer);
+  if (mode === 'xyz') return rasterUrl(`${WMS_SERVER}/tiles/${encodeURIComponent(layer.id)}/{z}/{x}/{y}.png`, layer);
   return rasterUrl(`${WMS_SERVER}/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=${encodeURIComponent(layer.id)}` +
     `&STYLES=${encodeURIComponent(layer.colorTableStyle ?? '')}&FORMAT=image/png&TRANSPARENT=TRUE&SRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}`, layer);
 }
@@ -127,13 +127,13 @@ export function withWeather(adapter, weather) {
     settleRasters: rasters.settle,
     restyleRasters: rasters.restyle,
     async assertColorTables(requests, signal) {
-      if (!requests.some(({ mode }) => ['wms', 'xyz'].includes(mode))) return;
+      if (!requests.some(({ mode }) => mode === 'wms')) return;
       const response = await fetch(WMS_SERVER + '/health', { cache: 'no-store', signal: AbortSignal.any([
         ...(signal ? [signal] : []), AbortSignal.timeout(5000),
       ]) });
       const health = response.ok ? await response.json() : {};
       if (JSON.stringify(health.colorTables) !== JSON.stringify(COLOR_TABLES)) {
-        throw new Error('Restart the updated WMS/PNG server: the benchmark needs matching parameter color tables.');
+        throw new Error('Restart the updated WMS server: the benchmark needs matching parameter color tables.');
       }
     },
     async initializeMaps(count, signal, camera) {
@@ -177,7 +177,7 @@ export function glWeatherFactory(map) {
         'raster-resampling': layer.style.resampling === 'nearest' ? 'nearest' : 'linear' },
     }, 'stations');
     return {
-      restyle: () => map.getSource(id).setTiles([weatherTileUrl(restyledLayer(layer), mode)]),
+      restyle: mode === 'wms' ? () => map.getSource(id).setTiles([weatherTileUrl(restyledLayer(layer), mode)]) : undefined,
       settle: (signal) => waitForMapEvent({ on: map.on.bind(map), off: map.off.bind(map),
         trigger: () => map.triggerRepaint() }, 'idle', signal),
       remove() { map.off('error', error); map.removeLayer(id); map.removeSource(id); },

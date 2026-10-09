@@ -165,9 +165,12 @@ test('benchmark requires updated isolation-aware raster servers, once per server
   t.after(() => { globalThis.fetch = original; });
   const calls = [];
   globalThis.fetch = async (url, options) => { calls.push(url); assert.equal(options.cache, 'no-store');
-    return { ok: true, json: async () => ({ cacheIsolationSupported: true }) }; };
+    return { ok: true, json: async () => ({ cacheIsolationSupported: true, xyzDelivery: 'precomputed-only', xyzColorRestyleSupported: false }) }; };
   await assertRasterIsolation([{ mode: 'wms' }, { mode: 'xyz' }, { mode: 'cog' }, { mode: 'grib' }], new AbortController().signal);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
+  assert.equal(calls.filter((url) => url.endsWith('/health')).length, 1);
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ cacheIsolationSupported: true }) });
+  await assert.rejects(assertRasterIsolation([{ mode: 'xyz' }]), /precomputed tiles/);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
   await assert.rejects(assertRasterIsolation([{ mode: 'cog' }], new AbortController().signal), /Restart the updated/);
 });

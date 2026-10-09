@@ -26,6 +26,15 @@ export async function assertRasterIsolation(requests, signal) {
     if (!response.ok || !metrics?.cacheIsolationSupported) {
       throw new Error('Restart the updated ' + label + ' at ' + server + ': independent map requests require cache-isolation support.');
     }
+    if (server === WMS_SERVER && requests.some(({ mode }) => mode === 'xyz')) {
+      const healthResponse = await fetch(server + '/health', { cache: 'no-store', signal: AbortSignal.any([
+        ...(signal ? [signal] : []), AbortSignal.timeout(5000),
+      ]) });
+      const health = healthResponse.ok ? await healthResponse.json() : {};
+      if (health.xyzDelivery !== 'precomputed-only' || health.xyzColorRestyleSupported !== false) {
+        throw new Error('Restart the updated WMS/PNG server: PNG benchmarks require read-only precomputed tiles.');
+      }
+    }
   }));
 }
 
@@ -212,7 +221,7 @@ export function createMapGroup(first, createMap, layout) {
       ready.catch(() => {});
       return {
         ready,
-        restyle: (style) => Promise.all(overlays.map((overlay) => overlay.restyle(style))),
+        restyle: mode === 'xyz' ? undefined : (style) => Promise.all(overlays.map((overlay) => overlay.restyle(style))),
         settle: (signal) => Promise.all(overlays.map((overlay) => overlay.settle(signal))),
         remove: () => overlays.forEach((overlay) => overlay.remove()),
         setVisible: (visible) => overlays.forEach((overlay) => overlay.setVisible(visible)),

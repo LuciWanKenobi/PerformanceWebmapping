@@ -107,14 +107,13 @@ export function createOpenLayersMapFactory(stations) {
         source.on('error', onError);
         map.getLayers().insertAt(1, overlay);
         return {
-          async restyle() {
+          restyle: mode === 'xyz' ? undefined : async () => {
             const styled = restyledLayer(layer);
             if (mode === 'cog') overlay.setStyle(cogStyle(styled));
             else if (mode === 'grib') {
               await reader.restyle(styled.style);
               source.refresh();
             } else if (mode === 'wms') source.updateParams({ STYLES: styled.colorTableStyle });
-            else source.setUrl(weatherTileUrl(styled, mode));
           },
           ready: reader?.ready,
           async settle(signal) {

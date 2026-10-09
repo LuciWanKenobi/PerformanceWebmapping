@@ -56,7 +56,7 @@ export function createRasterWorkload(createOverlay) {
     };
     requests.forEach(({ layer, mode }, index) => {
       const overlay = createOverlay(layer, mode, reportError, `benchmark-raster-${index}`);
-      overlays.push(overlay);
+      overlays.push({ ...overlay, mode });
       overlay.ready?.catch(reportError);
     });
   }
@@ -64,7 +64,8 @@ export function createRasterWorkload(createOverlay) {
     add, clear,
     restyle(style) {
       if (failure) throw failure;
-      const restyles = overlays.map((overlay) => {
+      // Precomputed RGB PNGs have no value-to-color restyle operation.
+      const restyles = overlays.filter(({ mode }) => mode !== 'xyz').map((overlay) => {
         if (!overlay.restyle) throw new Error('Raster adapter does not support color restyling.');
         return overlay.restyle(style);
       });

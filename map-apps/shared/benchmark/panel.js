@@ -6,6 +6,11 @@ import { MOTION_DURATIONS, DEFAULT_MOTION_SECONDS } from './data.js';
 const format = (value, digits = 1) => value == null ? 'n/a' : value.toFixed(digits);
 const mib = (value) => value == null ? 'n/a' : (value / 1048576).toFixed(2);
 
+export function formatRestyleTime(result) {
+  if (result.colorRestyleStatus === 'unsupported') return 'n/a (PNG fixed)';
+  return format(result.colorRestyleReadyMs) + (result.colorRestyleStatus === 'partial' ? ' (partial; PNG fixed)' : '');
+}
+
 export function mountBenchmark(adapter) {
   const panel = document.createElement('aside');
   panel.className = 'benchmark-panel';
@@ -17,7 +22,7 @@ export function mountBenchmark(adapter) {
       <fieldset>
         <legend>Workload</legend>
         <label>Maps <select name="maps">${Array.from({ length: 20 }, (_, i) => `<option>${i + 1}</option>`).join('')}</select></label>
-        <p>Every map gets the selected workload. Pan/zoom is synchronized. Rasters stop requesting finer tiles at their source resolution and remain visible at deeper zoom. Raster HTTP and PNG output caches are bypassed between maps and trials.</p>
+        <p>Every map gets the selected workload. Pan/zoom is synchronized. Rasters stop requesting finer tiles at their source resolution and remain visible at deeper zoom. Raster HTTP caches and WMS render caches are bypassed between maps and trials. PNG tiles are read from precomputed files for every map; missing files are not generated.</p>
         <label>Points per layer <select name="points"><option>100</option><option selected>1000</option><option>5000</option></select></label>
         <label>Point layers <select name="layers"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
         <div class="benchmark-raster-actions"><button type="button" id="benchmark-load-rasters">Load raster catalog</button><button type="button" id="benchmark-add-raster" disabled>Add raster layer</button></div>
@@ -30,7 +35,7 @@ export function mountBenchmark(adapter) {
         <label class="warmup"><input name="measureCpu" type="checkbox" checked /> Measure system CPU (local helper)</label>
         <p>CPU sampling uses <code>serve_metrics.py</code> on port 8004. Without it, CPU values are n/a.</p>
         <label class="warmup"><input name="colorRestyle" type="checkbox" checked /> Restyle colors at the end of each trial</label>
-        <p>Points become purple; each raster parameter switches to its alternative color table at the final fixed view. WMS/PNG modes fetch newly colored tiles.</p>
+        <p>Points become purple; WMS, COG and GRIB2 parameters switch to alternative color tables at the final fixed view. Precomputed PNG tiles keep their original colors and are reported as unsupported; mixed workloads report a partial restyle.</p>
         <label class="warmup"><input name="timeChange" type="checkbox" /> Change time during each trial</label>
         <fieldset id="benchmark-time-options" disabled>
           <legend>Time change</legend>
@@ -52,10 +57,10 @@ export function mountBenchmark(adapter) {
     <details><summary>What is measured?</summary>
       <p><b>Init ms:</b> fresh map construction and readiness for the whole grid before benchmark layers are added. Maps initialize sequentially at their final viewport sizes. Basemap and preview stations are hidden. Exports also include destruction plus two cleanup frames, total reset time and individual map initialization times. Initialization is separate from layer Ready ms, motion FPS and trial CPU/network totals; module, browser asset and OS caches can remain warm.</p>
       <p><b>Ready ms:</b> insertion of all selected layers through raster completion and the library's readiness signal. <b>Change ms:</b> replacing selected data through readiness at a fixed view. Synchronous submission times are also exported.</p>
-      <p><b>Restyle ms:</b> end-of-trial point fill and parameter color-table replacement through readiness on every map, followed by two animation frames. COG/GRIB layers recolor numeric values in the frontend; OpenLayers COG updates its GPU color expression. WMS/PNG layers request tiles rendered with the new table, including server work and network time. Parameter ranges and nodata transparency stay fixed. Tables are defined in test_data/color_tables.json and included in exports. This is a presentation proxy, not a GPU timestamp. Restyle scheduling and requests are exported separately and excluded from motion FPS.</p>
+      <p><b>Restyle ms:</b> end-of-trial point fill and parameter color-table replacement through readiness on every map, followed by two animation frames. COG/GRIB layers recolor numeric values in the frontend; OpenLayers COG updates its GPU color expression. WMS layers request images rendered with the new table, including server work and network time. Precomputed PNG layers remain unchanged and cause no restyle requests. PNG-only workloads report n/a, not a zero-millisecond success; mixed workloads time only supported operations and report partial. Parameter ranges and nodata transparency stay fixed. Tables are defined in test_data/color_tables.json and included in exports. This is a presentation proxy, not a GPU timestamp. Restyle scheduling and requests are exported separately and excluded from motion FPS.</p>
       <p><b>rAF fps / p95:</b> browser animation-callback cadence during motion, not GPU frame rate. Higher fps and lower p95 intervals indicate smoother scheduling.</p>
       <p><b>5% / 1% lows:</b> 1000 divided by the average of the slowest 5% / 1% of callback intervals, rounding the sample count up. Short runs have few tail samples. p99 and counts over 33, 50 and 100 ms are also exported.</p>
-      <p>Before/after motion and stationary time-change scheduling are exported separately, with forecast IDs/times, delivery modes, map count, per-map viewport sizes and raw intervals. Each map owns its sources, COG reader and GRIB workers. Raster URLs are unique per map/load, responses use no-store, and the PNG output cache is bypassed. Per-map memory caches can still serve subsequent views within the same load. Native-resolution tiles and canvas blocks are enlarged above the source ceiling; the camera and points continue zooming. Exports record the raster resolution policy and native tile zoom. OS disk caching and code/decoder asset caching are outside this isolation.</p>
+      <p>Before/after motion and stationary time-change scheduling are exported separately, with forecast IDs/times, delivery modes, map count, per-map viewport sizes and raw intervals. Each map owns its sources, COG reader and GRIB workers. Raster URLs are unique per map/load, responses use no-store, WMS bypasses its render cache, and PNG requests independently read precomputed files. Per-map memory caches can still serve subsequent views within the same load. Native-resolution tiles and canvas blocks are enlarged above the source ceiling; the camera and points continue zooming. Exports record the raster resolution policy and native tile zoom. OS disk caching and code/decoder asset caching are outside this isolation.</p>
       <p><b>CPU:</b> mean system utilization from counter deltas, plus peak/p95/last samples at 250 ms. Includes all applications and local servers. Main-thread long-task busy time is a separate metric.</p>
       <p><b>Requests:</b> completed browser resource fetches for rasters and code/decoder assets, including instrumented GRIB workers. Fetched bytes include cached bodies; transferred bytes include response headers and exclude browser cache hits. Unknown sizes are n/a, not zero. Updated data servers expose separate received-request, GET, range-GET and body-byte counters for all clients.</p>
       <p>JSON includes sanitized request timing and CPU samples; CSV includes totals. Failed/aborted or uninstrumented worker requests can be absent from browser timings. Use the server counters to check actual requests. Heap samples exclude GPU memory and may exclude workers. Use the production build for comparisons.</p>
@@ -188,7 +193,7 @@ export function mountBenchmark(adapter) {
     results.push(result);
     const row = document.createElement('tr');
     const cells = [results.length, result.mapCount, result.totalPoints, result.totalRasterLayerInstances, format(result.mapInitMs), format(result.layerReadyMs),
-      format(result.timeChangeReadyMs), format(result.colorRestyleReadyMs), format(result.rafFps), format(result.fpsLow5Percent), format(result.fpsLow1Percent),
+      format(result.timeChangeReadyMs), formatRestyleTime(result), format(result.rafFps), format(result.fpsLow5Percent), format(result.fpsLow1Percent),
       format(result.beforeChangeRafFps), format(result.afterChangeRafFps), format(result.p95FrameMs), format(result.p99FrameMs),
       format(result.systemCpuMeanPercent), format(result.systemCpuPeakPercent), result.requestCount ?? 'n/a',
       result.serverGetRequestCount ?? 'n/a', result.serverRangeGetRequestCount ?? 'n/a', mib(result.fetchedBodyBytes),
@@ -255,7 +260,10 @@ export function mountBenchmark(adapter) {
       const median = (key) => format(percentile(batch.map((row) => row[key]).filter((value) => value !== null), 50));
       summary.textContent = `Batch medians: init ${median('mapInitMs')} ms · ready ${median('layerReadyMs')} ms · rAF ${median('rafFps')} fps · p95 interval ${median('p95FrameMs')} ms.` +
         ` 5% low ${median('fpsLow5Percent')} fps · 1% low ${median('fpsLow1Percent')} fps · CPU ${median('systemCpuMeanPercent')}%.` +
-        (options.colorRestyle ? ' Restyle ' + median('colorRestyleReadyMs') + ' ms.' : '') +
+        (options.colorRestyle ? batch.at(-1)?.colorRestyleStatus === 'unsupported'
+          ? ' Restyle n/a: precomputed PNG colors are fixed.'
+          : ' Restyle ' + median('colorRestyleReadyMs') + ' ms.' +
+            (batch.at(-1)?.colorRestyleStatus === 'partial' ? ' Partial: PNG layers unchanged.' : '') : '') +
         (options.timeChange ? ` Time change ${median('timeChangeReadyMs')} ms · before ${median('beforeChangeRafFps')} fps · after ${median('afterChangeRafFps')} fps.` : '');
       const last = batch.at(-1);
       if (last?.cpuStatus.startsWith('unavailable')) summary.textContent += ' CPU helper unavailable; start test_data/serve_metrics.py.';
@@ -283,7 +291,7 @@ export function mountBenchmark(adapter) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   csv.addEventListener('click', () => download('csv', toCsv(results), 'text/csv;charset=utf-8'));
-  json.addEventListener('click', () => download('json', JSON.stringify({ schemaVersion: 7, results }, null, 2), 'application/json'));
+  json.addEventListener('click', () => download('json', JSON.stringify({ schemaVersion: 8, results }, null, 2), 'application/json'));
   clear.addEventListener('click', () => {
     results.length = 0;
     tbody.replaceChildren();

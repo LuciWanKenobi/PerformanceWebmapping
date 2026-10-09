@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local PNG tile service: WMS GetCapabilities/GetMap and cached XYZ tiles."""
+"""Local WMS rendering and read-only delivery of precomputed XYZ PNG tiles."""
 from __future__ import annotations
 
 import argparse
@@ -131,6 +131,8 @@ def aligned_tile(bbox):
 def make_handler(root: Path, cache: Path, catalog=None):
     catalog = catalog or load_catalog(root)
     layers = {layer["id"]: layer for layer in catalog["layers"]}
+    # Resolve the prepared-file namespace once; XYZ requests never read raster values.
+    tile_keys = {name: cache_key(root, layer) for name, layer in layers.items()}
     render_slots = threading.BoundedSemaphore(4)
 
     class WmsHandler(LocalHandler):
@@ -148,7 +150,8 @@ def make_handler(root: Path, cache: Path, catalog=None):
                 if url.path in ("/", "/health"):
                     self.send_json({"service": "wms", "layers": len(layers), "catalog": "/catalog.json",
                                     "wms": "/wms", "xyz": "/tiles/<layer>/{z}/{x}/{y}.png",
-                                    "colorTables": COLOR_TABLES})
+                                    "colorTables": COLOR_TABLES, "xyzDelivery": "precomputed-only",
+                                    "xyzColorRestyleSupported": False})
                 elif url.path == "/catalog.json":
                     self.send_json(catalog)
                 elif url.path.startswith("/tiles/"):
@@ -159,13 +162,14 @@ def make_handler(root: Path, cache: Path, catalog=None):
                     z, x, y = (int(match[i]) for i in (2, 3, 4))
                     params = {key.upper(): values[-1] for key, values in
                               parse_qs(url.query, keep_blank_values=True).items()}
-                    layer = styled_layer(layers[match[1]], params.get("STYLE", "default"))
-                    with render_slots:
-                        if self.isolated_request():
-                            data = render_png(root, layer, tile_bounds(z, x, y))
-                            self.send_bytes(data, "image/png")
-                            return
-                        path = cached_tile(root, cache, layer, z, x, y)
+                    if params.get("STYLE", "default") not in ("", "default"):
+                        raise ValueError("Precomputed PNG tiles have fixed colors; color restyling is unsupported.")
+                    tile_bounds(z, x, y)  # Validate coordinates without rendering.
+                    path = cache / match[1] / tile_keys[match[1]] / str(z) / str(x) / f"{y}.png"
+                    if not path.is_file():
+                        self.send_error(404, "Precomputed PNG tile missing; run generate_wms_tiles.py for this layer, zoom and region.")
+                        return
+                    # Unique URLs and no-store force independent HTTP/file reads between maps.
                     self.serve_file(path)
                 elif url.path == "/wms":
                     self.wms({key.upper(): values[-1] for key, values in

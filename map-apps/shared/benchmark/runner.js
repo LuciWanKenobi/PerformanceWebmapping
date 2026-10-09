@@ -128,13 +128,18 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
   const change = options.timeChange;
   const updatedDatasets = change?.points ? createPointLayers(options.pointsPerLayer, options.layerCount, DATASET_SEED + 1) : [];
   const rasters = options.rasterLayers ?? [];
+  const restyleRasters = rasters.filter(({ mode }) => mode !== 'xyz');
+  const skippedRestyleRasters = rasters.length - restyleRasters.length;
+  const canRestyle = options.layerCount > 0 || restyleRasters.length > 0;
+  const restyleStatus = !options.colorRestyle ? 'disabled' : !canRestyle ? 'unsupported'
+    : skippedRestyleRasters ? 'partial' : 'applied';
   const mapCount = options.mapCount ?? 1;
   if (adapter.mapCount && adapter.mapCount() !== mapCount) throw new Error('Wait for the requested map grid to finish loading.');
   await adapter.assertCacheIsolation?.(rasters, signal);
   if (options.colorRestyle) await adapter.assertColorTables?.(rasters, signal);
   if (rasters.length && (!adapter.addRasters || !adapter.settleRasters)) throw new Error('Raster benchmark adapter unavailable.');
   if (change?.points && !adapter.updatePoints) throw new Error('Point update adapter unavailable.');
-  if (options.colorRestyle && ((options.layerCount && !adapter.restylePoints) || (rasters.length && !adapter.restyleRasters))) {
+  if (options.colorRestyle && ((options.layerCount && !adapter.restylePoints) || (restyleRasters.length && !adapter.restyleRasters))) {
     throw new Error('Color-restyle benchmark adapter unavailable.');
   }
   const results = [];
@@ -200,13 +205,13 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           intervals = [...before, ...after];
         } else intervals = await animateCamera(adapter, options.durationSeconds * 1000, signal);
         await settleAll(adapter, rasters.length > 0, signal);
-        if (options.colorRestyle) {
+        if (options.colorRestyle && canRestyle) {
           onProgress((warmup ? 'Warm-up' : 'Trial ' + repetition) + ' · applying color restyle');
           await afterFrames(2, signal);
           colorRestyleStart = performance.now();
           restyleIntervals = await sampleUpdate(async () => {
             if (options.layerCount) adapter.restylePoints(COLOR_RESTYLE);
-            const restyling = rasters.length ? adapter.restyleRasters(COLOR_RESTYLE) : undefined;
+            const restyling = restyleRasters.length ? adapter.restyleRasters(COLOR_RESTYLE) : undefined;
             colorRestyleSubmitMs = performance.now() - colorRestyleStart;
             await abortable(Promise.resolve(restyling), signal);
             await settleAll(adapter, rasters.length > 0, signal);
@@ -228,7 +233,7 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
         if (warmup) continue;
         const size = adapter.size();
         const result = {
-          schemaVersion: 7,
+          schemaVersion: 8,
           batchId,
           recordedAt: new Date().toISOString(),
           library: adapter.library,
@@ -263,15 +268,23 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           nextRasterLayers: change?.rasters ? options.nextRasterLayers.map(({ layer, mode }) =>
             ({ id: layer.id, validTime: layer.valid_time, mode, nativeTileZoom: rasterNativeZoom(layer) })) : [],
           rasterReadySignal: rasters.length ? 'adapter raster completion, then native map readiness' : null,
-          cachePolicy: adapter.mapCount ? 'independent sources/readers/workers; unique URLs per map and load; no-store; bypass WMS/PNG output cache' : 'adapter default',
+          cachePolicy: adapter.mapCount ? 'independent sources/readers/workers; unique URLs per map and load; no-store; bypass WMS render cache; PNG files are precomputed and read independently per request' : 'adapter default',
           colorRestyleEnabled: Boolean(options.colorRestyle),
+          colorRestyleStatus: restyleStatus,
+          colorRestyleUnsupportedReason: options.colorRestyle && skippedRestyleRasters
+            ? 'Precomputed PNG tiles have fixed colors and are left unchanged.' : null,
+          colorRestyleAppliedPointLayerInstances: options.colorRestyle ? options.layerCount * mapCount : 0,
+          colorRestyleAppliedRasterLayerInstances: options.colorRestyle ? restyleRasters.length * mapCount : 0,
+          colorRestyleSkippedRasterLayerInstances: options.colorRestyle ? skippedRestyleRasters * mapCount : 0,
           colorRestyle: options.colorRestyle ? { ...COLOR_RESTYLE } : null,
-          colorRestyleMethod: options.colorRestyle ? 'native point fill; per-parameter value-to-color table replacement; numeric frontend recoloring or WMS/PNG server rendering and tile fetch' : null,
-          colorTablesId: options.colorRestyle ? COLOR_TABLES.id : null,
+          colorRestyleMethod: options.colorRestyle ? 'native point fill; numeric frontend recoloring or WMS server rendering and tile fetch; precomputed PNG layers unchanged' : null,
+          colorTablesId: options.colorRestyle && restyleRasters.length ? COLOR_TABLES.id : null,
           colorRestyleLayers: options.colorRestyle ? (change?.rasters ? options.nextRasterLayers : rasters).map(({ layer, mode }) =>
-            ({ id: layer.id, variable: layer.variable, mode, style: colorTableStyle(layer),
-              method: ['wms', 'xyz'].includes(mode) ? 'server recolor and tile fetch' : 'frontend numeric recolor' })) : [],
-          colorRestyleReadySignal: options.colorRestyle ? 'all raster and native map readiness, then two animation frames; presentation proxy' : null,
+            ({ id: layer.id, variable: layer.variable, mode, supported: mode !== 'xyz',
+              style: mode === 'xyz' ? null : colorTableStyle(layer),
+              method: mode === 'xyz' ? 'unsupported: precomputed PNG colors are fixed; unchanged'
+                : mode === 'wms' ? 'server recolor and tile fetch' : 'frontend numeric recolor' })) : [],
+          colorRestyleReadySignal: options.colorRestyle && canRestyle ? 'all raster and native map readiness, then two animation frames; presentation proxy' : null,
           colorRestyleSubmitMs,
           colorRestyleReadyMs,
           colorRestyleStartMs: colorRestyleStart == null ? null : colorRestyleStart - start,

@@ -52,7 +52,7 @@ benchmark multiple rasters together with points and optional forecast-time chang
 | `grib2_to_cog.py` | `grib2/**/*.grib2`, or `.grib2.bz2` | `cog/<relative-input-path>.tif`, `cog/catalog.json` |
 | `serve_cog.py` | `cog/`, `grib2/` | `http://127.0.0.1:8001/catalog.json`, `/cog/<relative-path>.tif`, `/grib2/<relative-path>.grib2` |
 | `generate_wms_tiles.py` | COG catalog and rasters | `wms_tiles/<layer-id>/<cache-key>/<z>/<x>/<y>.png`, `tiles.json` |
-| `serve_wms.py` | COGs and PNG cache | `http://127.0.0.1:8002/wms`, `/catalog.json`, `/tiles/<layer-id>/<z>/<x>/<y>.png` |
+| `serve_wms.py` | COGs for WMS; precomputed PNG files for XYZ | `http://127.0.0.1:8002/wms`, `/catalog.json`, `/tiles/<layer-id>/<z>/<x>/<y>.png` |
 | `serve_metrics.py` | OS system CPU counters | `http://127.0.0.1:8004/cpu`, `/cpu?since=<monotonic-ms>` |
 
 Each GRIB message becomes a separate single-band Float32 COG, retaining the run
@@ -126,8 +126,9 @@ http://127.0.0.1:8002/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0
 
 The generator defaults to Germany (`5.5 47 15.5 55.5`) at zooms 3–6, giving 15
 256px tiles per layer in the current dataset. Tiles use **XYZ** (north-origin Y),
-not TMS. The server renders missing zooms/regions on demand from the COGs and
-stores them under `wms_tiles/`. Standard 256px transparent Web Mercator WMS
+not TMS. The XYZ endpoint serves only existing files under `wms_tiles/`. Missing
+zooms/regions return 404; generate them offline with `generate_wms_tiles.py` first.
+Only WMS can render new maps from COG values during requests. Standard 256px transparent Web Mercator WMS
 requests on the XYZ grid reuse the same pre-rendered PNG; other WMS maps are
 cached in `_getmap/`. Cache keys include source size/mtime and style settings,
 so changed COGs do not reuse old images. Cache files have no automatic eviction;
@@ -142,16 +143,18 @@ The frontend now caps raster tile requests at the source's useful resolution and
 scales those tiles at deeper camera zoom. For the supplied 1377×657 ICON-EU
 rasters (0.0625° cells), the derived 256px XYZ ceiling is zoom 5. Generating
 millions of zoom 6–12 files adds no source detail and the app no longer requests
-those child zooms for this dataset. For complete Europe coverage at all requested
+those child zooms for this dataset. For complete supplied ICON-EU data coverage at all requested
 native levels, use:
 
 ```powershell
-python test_data/generate_wms_tiles.py --zoom 0 5 --bbox -12 34 35 72
+python test_data/generate_wms_tiles.py --zoom 0 5 --bbox -23.53125 29.46875 62.53125 70.53125
 ```
 
-The benchmark's HTTP/output cache isolation still renders requested parent PNGs
-fresh for each map/layer load; only subsequent views within that same map can
-reuse its native tile pixels. COG and GRIB modes retain independent numeric data.
+Generate these PNGs before benchmarking, then restart the WMS/PNG server. XYZ
+requests never render missing tiles or alternative palettes. Each map/load has
+unique URLs and no-store responses, so files are fetched independently between
+maps; only subsequent views within the same map can reuse its native tile pixels.
+WMS renders isolated requests afresh. COG and GRIB modes retain independent numeric data.
 
 Styles use fixed scales for the supplied variables across forecast times and a
 blue-to-red ramp. Scales clip extreme values for display without changing numeric
@@ -184,9 +187,11 @@ use Node.js 24+ to run the complete frontend worker tests. See the
 The multi-map benchmark appends `_map_request` (a unique key per map/layer load)
 and `_map` to raster URLs. These requests return `Cache-Control: no-store`.
 TIFF/GRIB responses ignore `If-None-Match` cache reuse, while range reads retain
-normal byte-range semantics. WMS and XYZ PNG requests render afresh and bypass
-both pre-generated tiles and the GetMap output cache. Ordinary requests without
-the key retain existing cache behavior. Restart the servers after updating;
+normal byte-range semantics. WMS requests render afresh and bypass the GetMap
+output cache. XYZ requests open existing precomputed PNG files independently,
+without rendering or writing files, and ignore conditional HTTP reuse. Missing
+files return 404; alternative XYZ styles return 400. Ordinary requests without
+the key retain HTTP revalidation and WMS rendering-cache behavior. Restart the servers after updating;
 `/metrics` advertises `cacheIsolationSupported` for the benchmark's startup check.
 This isolates raster HTTP/output caching between maps and trials, but does not
 flush OS disk caches or shared library/decoder assets.
@@ -221,4 +226,4 @@ COG handling follows the [OpenLayers GeoTIFF source](https://openlayers.org/en/l
 
 The end-of-trial restyle uses the named style `benchmark`. Its per-parameter RGB tables are defined in [color_tables.json](color_tables.json), shared by Python rendering and the frontend. The default catalog style stays unchanged; the alternate table preserves its numeric range, units, resampling and nodata. RGB stops are evenly spaced over that range. Aliases map related parameters to the corresponding table, and unknown parameters use the fallback. These palettes are for benchmark workloads.
 
-WMS GetCapabilities advertises `default` and `benchmark`. Request `STYLES=benchmark` for WMS GetMap, or append `?style=benchmark` to an XYZ PNG URL. Each style has a separate output-cache key. Isolated benchmark map requests still bypass this cache and return `Cache-Control: no-store`. The server renders the new palette from numeric COG values; it does not filter an existing PNG. Restart the WMS server after code or table edits. The launcher and benchmark check the server's shared tables before starting.
+WMS GetCapabilities advertises `default` and `benchmark`. Request `STYLES=benchmark` for WMS GetMap. Each WMS style has a separate output-cache key; isolated requests bypass the rendering cache and return `Cache-Control: no-store`. The server renders the new palette from numeric COG values. XYZ PNG tiles have fixed colors: alternative styles are rejected, existing files remain unchanged and missing files are never generated by the XYZ endpoint. The frontend skips PNG restyling and exports its unsupported/partial status with null timing for PNG-only workloads. Restart the WMS/PNG server after code changes; its health response advertises `xyzDelivery: precomputed-only` and `xyzColorRestyleSupported: false`, checked before PNG workloads start. The launcher and WMS-restyle preflight also verify the shared color tables.

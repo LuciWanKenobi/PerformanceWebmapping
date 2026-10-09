@@ -22,7 +22,7 @@ import rasterio
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from grib2_to_cog import convert_file, grib_messages
-from raster_pipeline import styled_layer, COLOR_TABLES, cache_key, load_catalog, tile_bounds, tiles_for_bbox, write_json
+from raster_pipeline import styled_layer, COLOR_TABLES, cache_key, cached_tile, load_catalog, tile_bounds, tiles_for_bbox, write_json
 from serve_cog import make_handler as cog_handler
 from serve_wms import make_handler as wms_handler
 from serve_metrics import make_handler as metrics_handler, cpu_counters
@@ -86,6 +86,8 @@ class RasterServicesTest(unittest.TestCase):
             eccodes.codes_release(handle)
         cls.layer = convert_file(cls.source, cls.input, cls.cog, 128, False)[0]
         write_json(cls.cog / "catalog.json", {"schema_version": 1, "layers": [cls.layer]})
+        # XYZ files must exist before the server starts.
+        cached_tile(cls.cog, cls.cache, cls.layer, 5, 16, 10)
 
     @classmethod
     def tearDownClass(cls):
@@ -260,27 +262,51 @@ class RasterServicesTest(unittest.TestCase):
             np.testing.assert_array_equal(image[0, 0], [0x12, 0x34, 0x56, 255])
             self.assertEqual(request(base + f"/tiles/{self.layer['id']}/5/999/10.png")[0], 400)
 
-    def test_independent_xyz_and_wms_maps_render_without_shared_output_cache(self):
+    def test_independent_xyz_reads_precomputed_files_while_wms_renders(self):
         import serve_wms
         cache = self.base / "isolated-output-cache"
+        tile = cached_tile(self.cog, cache, self.layer, 5, 16, 10)
+        expected = tile.read_bytes()
+        files = {path: path.stat().st_mtime_ns for path in cache.rglob("*.png")}
         with service(wms_handler(self.cog, cache)) as base:
             url = f"{base}/tiles/{self.layer['id']}/5/16/10.png"
-            expected = request(url)[2]
-            files = {path: path.stat().st_mtime_ns for path in cache.rglob("*.png")}
             bbox = ",".join(map(str, tile_bounds(5, 16, 10)))
-            with patch("serve_wms.cached_tile", side_effect=AssertionError("Shared tile cache used")), \
+            with patch("serve_wms.cached_tile", side_effect=AssertionError("Runtime tile generation used")), \
                     patch("serve_wms.render_png", wraps=serve_wms.render_png) as render:
                 for index in [1, 2]:
-                    urls = [url + f"?_map_request=xyz-{index}&_map={index}",
-                            self.map_url(base, SRS="EPSG:3857", BBOX=bbox, WIDTH=256, HEIGHT=256,
-                                         _map_request=f"wms-{index}", _map=index)]
-                    for isolated in urls:
-                        status, headers, body = request(isolated)
-                        self.assertEqual(status, 200)
-                        self.assertEqual(headers["Cache-Control"], "no-store")
-                        self.assertEqual(body, expected)
-                self.assertEqual(render.call_count, 4)
+                    status, headers, body = request(url + f"?_map_request=xyz-{index}&_map={index}",
+                                                    {"If-None-Match": "*"})
+                    self.assertEqual(status, 200)
+                    self.assertEqual(headers["Cache-Control"], "no-store")
+                    self.assertEqual(body, expected)
+                self.assertEqual(render.call_count, 0)
+                for index in [1, 2]:
+                    status, headers, body = request(self.map_url(base, SRS="EPSG:3857", BBOX=bbox,
+                                                                WIDTH=256, HEIGHT=256,
+                                                                _map_request=f"wms-{index}", _map=index))
+                    self.assertEqual(status, 200)
+                    self.assertEqual(headers["Cache-Control"], "no-store")
+                    self.assertEqual(body, expected)
+                self.assertEqual(render.call_count, 2)
             self.assertEqual(files, {path: path.stat().st_mtime_ns for path in cache.rglob("*.png")})
+
+    def test_missing_xyz_and_restyle_requests_never_render_or_write(self):
+        cache = self.base / "missing-precomputed"
+        with service(wms_handler(self.cog, cache)) as base:
+            health = json.loads(request(base + "/health")[2])
+            self.assertEqual(health["xyzDelivery"], "precomputed-only")
+            self.assertFalse(health["xyzColorRestyleSupported"])
+            url = f"{base}/tiles/{self.layer['id']}/5/16/10.png"
+            with patch("serve_wms.render_png", side_effect=AssertionError("XYZ must not render")), \
+                    patch("serve_wms.cached_tile", side_effect=AssertionError("XYZ must not generate")):
+                for suffix in ("", "?_map_request=missing&_map=1"):
+                    status, _, body = request(url + suffix)
+                    self.assertEqual(status, 404)
+                    self.assertIn(b"generate_wms_tiles.py", body)
+                for style in ("benchmark", "unknown"):
+                    self.assertEqual(request(url + "?style=" + style)[0], 400)
+                self.assertEqual(request(url, method="HEAD")[0], 404)
+            self.assertFalse(cache.exists())
 
     def test_parameter_table_changes_png_values_and_keeps_alpha_and_separate_cache(self):
         alternative = styled_layer(self.layer, "benchmark")
@@ -299,20 +325,25 @@ class RasterServicesTest(unittest.TestCase):
             self.assertFalse(np.array_equal(initial[:, :, :3], restyled[:, :, :3]))
             np.testing.assert_array_equal(initial[:, :, 3], restyled[:, :, 3])
             url = f"{base}/tiles/{self.layer['id']}/5/16/10.png"
+            tile_path = self.cache / self.layer["id"] / cache_key(self.cog, self.layer) / "5/16/10.png"
             default_tile = request(url)[2]
-            styled_tile = request(url + "?style=benchmark")[2]
-            self.assertNotEqual(default_tile, styled_tile)
+            modified = tile_path.stat().st_mtime_ns
+            self.assertEqual(request(url + "?style=benchmark")[0], 400)
             bbox = ",".join(map(str, tile_bounds(5, 16, 10)))
-            wms_tile = request(self.map_url(base, STYLES="benchmark", SRS="EPSG:3857",
-                                            BBOX=bbox, WIDTH=256, HEIGHT=256))[2]
-            self.assertEqual(styled_tile, wms_tile)
+            status, _, wms_tile = request(self.map_url(base, STYLES="benchmark", SRS="EPSG:3857",
+                                                       BBOX=bbox, WIDTH=256, HEIGHT=256))
+            self.assertEqual(status, 200)
+            self.assertNotEqual(default_tile, wms_tile)
             import serve_wms
             with patch("serve_wms.cached_tile", side_effect=AssertionError("Shared cache used")):
                 for index in (1, 2):
-                    status, headers, isolated = request(url + f"?style=benchmark&_map_request=restyle-{index}&_map={index}")
+                    status, headers, isolated = request(self.map_url(base, STYLES="benchmark", SRS="EPSG:3857",
+                        BBOX=bbox, WIDTH=256, HEIGHT=256, _map_request=f"restyle-{index}", _map=index))
                     self.assertEqual(status, 200)
                     self.assertEqual(headers["Cache-Control"], "no-store")
-                    self.assertEqual(isolated, styled_tile)
+                    self.assertEqual(isolated, wms_tile)
+            self.assertEqual(request(url)[2], default_tile)
+            self.assertEqual(tile_path.stat().st_mtime_ns, modified)
             self.assertEqual(request(self.map_url(base, STYLES="unknown"))[0], 400)
             self.assertEqual(request(url + "?style=unknown")[0], 400)
 

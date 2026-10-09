@@ -1,4 +1,4 @@
-import { colorTableStyle, restyledLayer } from '../color-tables.js';
+import { colorTableStyle } from '../color-tables.js';
 import L from 'leaflet';
 import { rasterNativeZoom } from '../raster-resolution.js';
 import 'leaflet/dist/leaflet.css';
@@ -81,10 +81,7 @@ export function createLeafletMapFactory(stations) {
           : L.tileLayer(weatherTileUrl(layer, mode), options);
         tiles.on('tileerror', onError).addTo(map);
         return {
-          restyle() {
-            if (mode === 'wms') tiles.setParams({ styles: 'benchmark' });
-            else tiles.setUrl(weatherTileUrl(restyledLayer(layer), mode));
-          },
+          restyle: mode === 'wms' ? () => tiles.setParams({ styles: 'benchmark' }) : undefined,
           async settle(signal) {
             await afterFrames(2, signal);
             await waitUntil(() => !tiles.isLoading(), signal);

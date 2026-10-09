@@ -1,8 +1,9 @@
-node_modules/
-dist/
+map-apps/node_modules/
+map-apps/dist/
 .env
 .env.*
 !.env.example
 *.log
 .npm-cache/
 .local-services/
+test_data/

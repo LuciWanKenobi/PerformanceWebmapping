@@ -40,7 +40,7 @@ test('launcher uses configured ports and a selected Python interpreter', () => {
 
 test('healthy existing services are reused without spawning duplicate processes', async (t) => {
   const url = await server(t, (req, res) => { res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(req.url === '/metrics' ? { cacheIsolationSupported: true } : { service: 'wms', colorTables: COLOR_TABLES })); });
+    res.end(JSON.stringify(req.url === '/metrics' ? { cacheIsolationSupported: true } : { service: 'wms', colorTables: COLOR_TABLES, xyzDelivery: 'precomputed-only', xyzColorRestyleSupported: false })); });
   const service = { ...spec(url, 'nonexistent-executable'), service: 'wms' };
   const started = [], reports = [];
   await startServices([service], await temporaryLogs(t), started, (message) => reports.push(message));
@@ -55,6 +55,8 @@ test('wrong and outdated servers fail clearly without replacing the listener', a
   await assert.rejects(probeService({ ...spec(outdated), service: 'wms' }), /Restart the updated WMS|Restart the updated CPU helper/);
   const oldTables = await server(t, (req, res) => res.end(JSON.stringify(req.url === '/metrics' ? { cacheIsolationSupported: true } : { service: 'wms' })));
   await assert.rejects(probeService({ ...spec(oldTables), service: 'wms' }), /matching parameter color tables/);
+  const dynamicPng = await server(t, (_req, res) => res.end(JSON.stringify({ service: 'wms', colorTables: COLOR_TABLES })));
+  await assert.rejects(probeService({ ...spec(dynamicPng), service: 'wms' }), /precomputed and read-only/);
 });
 
 test('missing executables and startup crashes include a useful error and clean up', async (t) => {

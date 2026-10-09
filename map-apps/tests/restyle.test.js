@@ -11,6 +11,8 @@ import { colorTableStyle, restyledLayer, COLOR_TABLES } from '../shared/color-ta
 import { colorize, createCogReader, mercatorY } from '../shared/cog-reader.js';
 import { createServer } from 'node:http';
 import { writeArrayBuffer } from 'geotiff';
+import { formatRestyleTime } from '../shared/benchmark/panel.js';
+import { createRasterWorkload } from '../shared/benchmark/raster-workload.js';
 import { STATION_COLOR } from '../shared/config.js';
 
 test('GL changes every point fill and reloads server rasters with parameter color tables, retaining sources', () => {
@@ -25,7 +27,7 @@ test('GL changes every point fill and reloads server rasters with parameter colo
     assert.ok(paints.some(([layer, property, value]) => layer === id && property === 'circle-color' && value === '#a323c5'));
     assert.ok(paints.some(([layer, property, value]) => layer === id && property === 'circle-color-transition' && value.duration === 0));
   }
-  for (const mode of ['wms', 'xyz']) {
+  for (const mode of ['wms']) {
     const raster = glWeatherFactory(map)({ id: 'weather', variable: 't_2m', requestKey: 'map1-private', mapIndex: 1, bounds: [-12, 34, 35, 72], style: { min: 253.15, max: 313.15 } }, mode, assert.fail, mode);
     const before = sources.length;
     raster.restyle(COLOR_RESTYLE);
@@ -120,9 +122,42 @@ test('table compatibility check rejects outdated WMS servers before timing, and 
   const adapter = withWeather({}, {});
   let requests = 0;
   globalThis.fetch = async () => { requests++; return { ok: true, json: async () => ({}) }; };
-  await adapter.assertColorTables([{ mode: 'cog' }, { mode: 'grib' }], new AbortController().signal);
+  await adapter.assertColorTables([{ mode: 'cog' }, { mode: 'grib' }, { mode: 'xyz' }], new AbortController().signal);
   assert.equal(requests, 0);
   await assert.rejects(adapter.assertColorTables([{ mode: 'wms' }], new AbortController().signal), /Restart.*color tables/);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ colorTables: COLOR_TABLES }) });
-  await adapter.assertColorTables([{ mode: 'xyz' }], new AbortController().signal);
+  await adapter.assertColorTables([{ mode: 'wms' }], new AbortController().signal);
+});
+
+test('precomputed GL PNG overlays have no restyle operation and never change tile URLs', async () => {
+  const sources = [], updates = [];
+  const map = { on() {}, off() {}, addSource(_id, source) { sources.push(source); }, addLayer() {},
+    getSource: () => ({ setTiles: (tiles) => updates.push(tiles) }), removeLayer() {}, removeSource() {} };
+  const layer = { id: 'weather', variable: 't_2m', bounds: [-12, 34, 35, 72],
+    requestKey: 'private-map', mapIndex: 1, colorTableStyle: 'benchmark',
+    style: { min: 0, max: 100, resampling: 'nearest' } };
+  const overlay = glWeatherFactory(map)(layer, 'xyz', assert.fail);
+  assert.equal(overlay.restyle, undefined);
+  const url = new URL(sources[0].tiles[0]);
+  assert.equal(url.searchParams.has('style'), false);
+  assert.equal(url.searchParams.get('_map_request'), 'private-map');
+  const workload = createRasterWorkload(() => ({ ...overlay,
+    restyle() { assert.fail('PNG restyle must never run, even when an adapter exposes one'); } }));
+  workload.add([{ layer, mode: 'xyz' }]);
+  await workload.restyle(COLOR_RESTYLE);
+  assert.deepEqual(updates, []);
+  workload.clear();
+});
+
+test('mixed workloads skip PNG restyling and display partial instead of a full success', async () => {
+  const restyled = [];
+  const workload = createRasterWorkload((_layer, mode) => ({
+    restyle() { restyled.push(mode); }, remove() {},
+  }));
+  workload.add(['xyz', 'wms', 'cog', 'grib'].map((mode) => ({ layer: {}, mode })));
+  await workload.restyle(COLOR_RESTYLE);
+  assert.deepEqual(restyled, ['wms', 'cog', 'grib']);
+  assert.equal(formatRestyleTime({ colorRestyleStatus: 'unsupported', colorRestyleReadyMs: null }), 'n/a (PNG fixed)');
+  assert.equal(formatRestyleTime({ colorRestyleStatus: 'partial', colorRestyleReadyMs: 123 }), '123.0 (partial; PNG fixed)');
+  workload.clear();
 });
