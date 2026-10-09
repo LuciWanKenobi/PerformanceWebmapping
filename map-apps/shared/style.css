@@ -1,0 +1,73 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #18232e;
+  background: #fff;
+  font-synthesis: none;
+  line-height: 1.5;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #155bb5; }
+button, input, select { font: inherit; }
+button { cursor: pointer; padding: 0.35rem 0.75rem; }
+:focus-visible { outline: 3px solid #155bb5; outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+.home main { max-width: 48rem; margin: 4rem auto; padding: 0 1.5rem; }
+h1 { font-size: 1.5rem; margin: 0; }
+.app-list { padding-left: 1.25rem; }
+.app-list li { margin: 1rem 0; }
+.app-list span, .muted { color: #526171; }
+.app-list span { display: block; font-size: 0.875rem; }
+
+.map-app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem 1.5rem; padding: 0.75rem 1rem; border-bottom: 1px solid #d1d9e0; }
+.toolbar h1 { font-size: 1.125rem; }
+.toolbar label { display: flex; align-items: center; gap: 0.4rem; }
+.weather-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 1rem; margin: 0; padding: 0.35rem 0.65rem; border: 1px solid #d1d9e0; min-width: 0; }
+.weather-controls legend, .weather-info { font-size: 0.75rem; color: #526171; }
+.weather-forecast { width: min(28rem, 50vw); }
+.weather-controls select { padding: 0.2rem; }
+.map-frame { position: relative; flex: 1; min-height: 16rem; }
+#map { position: absolute; inset: 0; background: #edf1f4; }
+.map-grid { position: absolute; inset: 0; display: grid; gap: 3px; background: #d1d9e0; }
+.map-pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #edf1f4; }
+.map-surface { position: absolute; inset: 0; }
+.map-caption { position: absolute; top: 3px; right: 3px; z-index: 1000; padding: 0 0.35rem; font-size: 0.65rem; background: #fffd; pointer-events: none; }
+.status { margin: 0; padding: 0.5rem 1rem; font-size: 0.875rem; }
+.status[data-error="true"] { color: #9c2525; background: #fff1f0; }
+.setup { position: absolute; z-index: 1; inset: 1rem auto auto 1rem; max-width: min(34rem, calc(100% - 2rem)); background: white; border: 1px solid #b9c5d0; padding: 1.25rem; }
+.setup h2 { margin-top: 0; font-size: 1.125rem; }
+.setup code { overflow-wrap: anywhere; }
+.station-popup { font: 14px/1.5 system-ui, sans-serif; min-width: 9rem; }
+.station-popup p { margin: 0.25rem 0; }
+.ol-popup { background: #fff; border: 1px solid #b9c5d0; border-radius: 3px; padding: 0.75rem; box-shadow: 0 2px 8px #0002; }
+.ol-popup button { float: right; margin: 0 0 0.5rem 1rem; padding: 0 0.35rem; }
+
+.map-workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 23rem; }
+.benchmark-panel { padding: 1rem; border-left: 1px solid #d1d9e0; overflow: auto; font-size: 0.875rem; }
+.benchmark-panel h2 { font-size: 1.125rem; margin: 0; }
+.benchmark-panel p { margin: 0.75rem 0; }
+.benchmark-panel fieldset { margin: 1rem 0; padding: 0.75rem; border: 1px solid #d1d9e0; }
+.benchmark-panel label { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
+.benchmark-panel select { min-width: 6.5rem; padding: 0.25rem; }
+.benchmark-panel .warmup { justify-content: flex-start; }
+.benchmark-raster-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.benchmark-raster-row { border-top: 1px solid #d1d9e0; padding: 0.5rem 0; margin-top: 0.5rem; }
+.benchmark-raster-row .raster-series { width: 14rem; min-width: 0; }
+.benchmark-panel select[name="rasterTime"], .benchmark-panel select[name="nextRasterTime"] { width: 12rem; min-width: 0; }
+.benchmark-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.benchmark-results { overflow: auto; max-height: 14rem; margin: 1rem 0; }
+.benchmark-results table { border-collapse: collapse; width: 100%; white-space: nowrap; }
+.benchmark-results caption { text-align: left; padding-bottom: 0.5rem; }
+.benchmark-results th, .benchmark-results td { padding: 0.4rem; text-align: right; border-bottom: 1px solid #d1d9e0; }
+.benchmark-results th { background: #edf1f4; }
+.benchmark-panel details { margin-top: 1rem; }
+.benchmark-panel summary { cursor: pointer; }
+
+@media (max-width: 760px) {
+  .map-workspace { grid-template-columns: 1fr; overflow: auto; }
+  .map-workspace .map-frame { min-height: 50vh; }
+  .benchmark-panel { border-left: none; border-top: 1px solid #d1d9e0; overflow: visible; }
+}

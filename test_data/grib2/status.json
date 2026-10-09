@@ -1,0 +1,146 @@
+{
+  "cycle_requested": "00",
+  "cycle_selected": "00",
+  "latest_initstamp": "2026100500",
+  "layout": "by_init_dir",
+  "out_dir": "C:/Users/lucas/OneDrive/Dokumente/ProjektNeu/Abschlussarbeit/test_data/grib2",
+  "pinned_run_id": null,
+  "progress": {
+    "failed_decompress": 0,
+    "failed_downloads": 0,
+    "planned_decompress": 40,
+    "planned_downloads": 40,
+    "successful_decompress": 40,
+    "successful_downloads": 40
+  },
+  "resolved_global_run": null,
+  "run_policy": "global",
+  "runs": {
+    "2026100500": {
+      "file_count_bz2": 0,
+      "file_count_grib2": 40,
+      "file_count_total": 40,
+      "path": "C:/Users/lucas/OneDrive/Dokumente/ProjektNeu/Abschlussarbeit/test_data/grib2/2026100500",
+      "vars": {
+        "cape_con": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "clct": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "ps": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "relhum_2m": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "t_2m": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "tot_prec": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "vmax_10m": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        },
+        "ww": {
+          "category": "single",
+          "file_count_bz2": 0,
+          "file_count_grib2": 5,
+          "file_count_total": 5,
+          "forecast_hours": [
+            3,
+            15,
+            27,
+            39,
+            51
+          ],
+          "levels": []
+        }
+      }
+    }
+  },
+  "schema_version": 1,
+  "selected_initstamps": [
+    "2026100500"
+  ],
+  "stage": "complete",
+  "updated_utc": "2026-10-05T11:34:56.596763+00:00"
+}

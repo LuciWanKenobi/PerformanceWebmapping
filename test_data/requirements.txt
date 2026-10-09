@@ -1,0 +1,6 @@
+# Python 3.11+; ecCodes decodes DWD's CCSDS-compressed GRIBs on Windows.
+eccodes>=2.38,<3
+numpy>=1.26,<3
+rasterio>=1.4.3,<2
+Pillow>=10.4,<13
+psutil>=7.1,<8

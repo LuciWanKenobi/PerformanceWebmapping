@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Basic Mapbox GL JS map with sample stations." />
+    <title>Mapbox GL JS · Mapping apps</title>
+  </head>
+  <body class="map-app">
+    <header class="toolbar">
+      <a href="../">All apps</a>
+      <h1>Mapbox GL JS</h1>
+      <label><input id="stations" type="checkbox" checked disabled /> Sample stations</label>
+      <button id="reset" type="button" disabled>Reset view</button>
+    </header>
+    <main class="map-frame">
+      <div id="map" role="region" aria-label="Mapbox map" tabindex="0"></div>
+      <section id="token-setup" class="setup" hidden>
+        <h2>Add your Mapbox token</h2>
+        <p>Copy <code>.env.example</code> to <code>.env.local</code> in the project folder and set <code>VITE_MAPBOX_ACCESS_TOKEN</code> to your public <code>pk.</code> token.</p>
+        <p>Restart the development server after saving. For a production build, rebuild after setting the token.</p>
+        <a href="https://account.mapbox.com/access-tokens/">Get a public Mapbox token</a>
+      </section>
+    </main>
+    <p id="status" class="status" role="status">Loading map…</p>
+    <noscript>This app requires JavaScript.</noscript>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

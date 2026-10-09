@@ -1,0 +1,27 @@
+{
+  "name": "bachelorarbeit-map-apps",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "start:all": "node start-all.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@meri-imperiumi/eccodes-wasm": "2.48.2",
+    "geotiff": "3.1.0-beta.0",
+    "leaflet": "1.9.4",
+    "mapbox-gl": "3.31.0",
+    "maplibre-gl": "6.10.0",
+    "ol": "10.10.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

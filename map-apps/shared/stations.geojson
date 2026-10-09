@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "berlin",
+      "properties": { "name": "Berlin", "temperature": 19.2 },
+      "geometry": { "type": "Point", "coordinates": [13.405, 52.52] }
+    },
+    {
+      "type": "Feature",
+      "id": "hamburg",
+      "properties": { "name": "Hamburg", "temperature": 16.8 },
+      "geometry": { "type": "Point", "coordinates": [9.9937, 53.5511] }
+    },
+    {
+      "type": "Feature",
+      "id": "munich",
+      "properties": { "name": "Munich", "temperature": 21.4 },
+      "geometry": { "type": "Point", "coordinates": [11.582, 48.1351] }
+    }
+  ]
+}

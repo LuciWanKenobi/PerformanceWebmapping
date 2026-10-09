@@ -1,0 +1,2648 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-05T11:58:18.755973+00:00",
+  "attribution": "Deutscher Wetterdienst (DWD), ICON forecast",
+  "layers": [
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CAPE_CON",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CAPE_CON.tif",
+      "variable": "cape_con",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CAPE_CON.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "Convective Available Potential Energy",
+      "short_name": "CAPE_CON",
+      "units": "J kg-1",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 958.15625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2180335,
+      "style": {
+        "min": 0,
+        "max": 4000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CLCT",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CLCT.tif",
+      "variable": "clct",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CLCT.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "Total Cloud Cover",
+      "short_name": "CLCT",
+      "units": "%",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 100.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2102246,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_PS",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_PS.tif",
+      "variable": "ps",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_PS.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "Surface pressure",
+      "short_name": "sp",
+      "units": "Pa",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 64323.51953125,
+      "max": 106660.515625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1815606,
+      "style": {
+        "min": 90000,
+        "max": 105000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_RELHUM_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_RELHUM_2M.tif",
+      "variable": "relhum_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_RELHUM_2M.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "2 metre relative humidity",
+      "short_name": "2r",
+      "units": "%",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 14.196686744689941,
+      "max": 99.99942016601562,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2368196,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_T_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_T_2M.tif",
+      "variable": "t_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_T_2M.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "2 metre temperature",
+      "short_name": "2t",
+      "units": "K",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 262.547119140625,
+      "max": 306.240478515625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2060391,
+      "style": {
+        "min": 253.15,
+        "max": 313.15,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_TOT_PREC",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_TOT_PREC.tif",
+      "variable": "tot_prec",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_TOT_PREC.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "Total Precipitation",
+      "short_name": "tp",
+      "units": "kg m**-2",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 38.380859375,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1076463,
+      "style": {
+        "min": 0,
+        "max": 50,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_VMAX_10M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_VMAX_10M.tif",
+      "variable": "vmax_10m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_VMAX_10M.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "Time-maximum 10 metre wind gust",
+      "short_name": "max_i10fg",
+      "units": "m s**-1",
+      "level_type": "heightAboveGround",
+      "level": 10.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 36.7392578125,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2500986,
+      "style": {
+        "min": 0,
+        "max": 40,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_WW",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_WW.tif",
+      "variable": "ww",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_003_WW.grib2",
+      "message": 1,
+      "forecast_hour": 3,
+      "run": "2026100500",
+      "name": "weather interpretation (WMO)",
+      "short_name": "WW",
+      "units": "Numeric",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 96.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 343621,
+      "style": {
+        "min": 0,
+        "max": 99,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "nearest"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CAPE_CON",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CAPE_CON.tif",
+      "variable": "cape_con",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CAPE_CON.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "Convective Available Potential Energy",
+      "short_name": "CAPE_CON",
+      "units": "J kg-1",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 816.625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2312879,
+      "style": {
+        "min": 0,
+        "max": 4000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CLCT",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CLCT.tif",
+      "variable": "clct",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CLCT.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "Total Cloud Cover",
+      "short_name": "CLCT",
+      "units": "%",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 100.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2175240,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_PS",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_PS.tif",
+      "variable": "ps",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_PS.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "Surface pressure",
+      "short_name": "sp",
+      "units": "Pa",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 64367.6484375,
+      "max": 106326.6484375,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1801994,
+      "style": {
+        "min": 90000,
+        "max": 105000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_RELHUM_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_RELHUM_2M.tif",
+      "variable": "relhum_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_RELHUM_2M.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "2 metre relative humidity",
+      "short_name": "2r",
+      "units": "%",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 9.710895538330078,
+      "max": 99.99995422363281,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2412973,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_T_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_T_2M.tif",
+      "variable": "t_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_T_2M.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "2 metre temperature",
+      "short_name": "2t",
+      "units": "K",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 264.4723205566406,
+      "max": 312.0533752441406,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2020375,
+      "style": {
+        "min": 253.15,
+        "max": 313.15,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_TOT_PREC",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_TOT_PREC.tif",
+      "variable": "tot_prec",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_TOT_PREC.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "Total Precipitation",
+      "short_name": "tp",
+      "units": "kg m**-2",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 129.41015625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1338058,
+      "style": {
+        "min": 0,
+        "max": 50,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_VMAX_10M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_VMAX_10M.tif",
+      "variable": "vmax_10m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_VMAX_10M.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "Time-maximum 10 metre wind gust",
+      "short_name": "max_i10fg",
+      "units": "m s**-1",
+      "level_type": "heightAboveGround",
+      "level": 10.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 43.265625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2440645,
+      "style": {
+        "min": 0,
+        "max": 40,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_WW",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_WW.tif",
+      "variable": "ww",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_015_WW.grib2",
+      "message": 1,
+      "forecast_hour": 15,
+      "run": "2026100500",
+      "name": "weather interpretation (WMO)",
+      "short_name": "WW",
+      "units": "Numeric",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-05T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 96.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 357020,
+      "style": {
+        "min": 0,
+        "max": 99,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "nearest"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CAPE_CON",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CAPE_CON.tif",
+      "variable": "cape_con",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CAPE_CON.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "Convective Available Potential Energy",
+      "short_name": "CAPE_CON",
+      "units": "J kg-1",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 820.171875,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2185127,
+      "style": {
+        "min": 0,
+        "max": 4000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CLCT",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CLCT.tif",
+      "variable": "clct",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CLCT.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "Total Cloud Cover",
+      "short_name": "CLCT",
+      "units": "%",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 100.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2140529,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_PS",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_PS.tif",
+      "variable": "ps",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_PS.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "Surface pressure",
+      "short_name": "sp",
+      "units": "Pa",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 64236.2578125,
+      "max": 106541.2578125,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1807833,
+      "style": {
+        "min": 90000,
+        "max": 105000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_RELHUM_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_RELHUM_2M.tif",
+      "variable": "relhum_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_RELHUM_2M.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "2 metre relative humidity",
+      "short_name": "2r",
+      "units": "%",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 14.04594898223877,
+      "max": 99.99907684326172,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2387230,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_T_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_T_2M.tif",
+      "variable": "t_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_T_2M.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "2 metre temperature",
+      "short_name": "2t",
+      "units": "K",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 262.99749755859375,
+      "max": 306.13909912109375,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2048779,
+      "style": {
+        "min": 253.15,
+        "max": 313.15,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_TOT_PREC",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_TOT_PREC.tif",
+      "variable": "tot_prec",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_TOT_PREC.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "Total Precipitation",
+      "short_name": "tp",
+      "units": "kg m**-2",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 137.40234375,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1538309,
+      "style": {
+        "min": 0,
+        "max": 50,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_VMAX_10M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_VMAX_10M.tif",
+      "variable": "vmax_10m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_VMAX_10M.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "Time-maximum 10 metre wind gust",
+      "short_name": "max_i10fg",
+      "units": "m s**-1",
+      "level_type": "heightAboveGround",
+      "level": 10.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 37.4267578125,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2500832,
+      "style": {
+        "min": 0,
+        "max": 40,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_WW",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_WW.tif",
+      "variable": "ww",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_027_WW.grib2",
+      "message": 1,
+      "forecast_hour": 27,
+      "run": "2026100500",
+      "name": "weather interpretation (WMO)",
+      "short_name": "WW",
+      "units": "Numeric",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 96.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 365875,
+      "style": {
+        "min": 0,
+        "max": 99,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "nearest"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CAPE_CON",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CAPE_CON.tif",
+      "variable": "cape_con",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CAPE_CON.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "Convective Available Potential Energy",
+      "short_name": "CAPE_CON",
+      "units": "J kg-1",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 872.0625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2322253,
+      "style": {
+        "min": 0,
+        "max": 4000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CLCT",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CLCT.tif",
+      "variable": "clct",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CLCT.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "Total Cloud Cover",
+      "short_name": "CLCT",
+      "units": "%",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 100.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2165433,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_PS",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_PS.tif",
+      "variable": "ps",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_PS.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "Surface pressure",
+      "short_name": "sp",
+      "units": "Pa",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 64218.55078125,
+      "max": 106354.546875,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1802464,
+      "style": {
+        "min": 90000,
+        "max": 105000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_RELHUM_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_RELHUM_2M.tif",
+      "variable": "relhum_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_RELHUM_2M.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "2 metre relative humidity",
+      "short_name": "2r",
+      "units": "%",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 8.05455207824707,
+      "max": 99.99986267089844,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2425270,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_T_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_T_2M.tif",
+      "variable": "t_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_T_2M.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "2 metre temperature",
+      "short_name": "2t",
+      "units": "K",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 263.8255310058594,
+      "max": 312.7884216308594,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2024349,
+      "style": {
+        "min": 253.15,
+        "max": 313.15,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_TOT_PREC",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_TOT_PREC.tif",
+      "variable": "tot_prec",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_TOT_PREC.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "Total Precipitation",
+      "short_name": "tp",
+      "units": "kg m**-2",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 142.421875,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1695157,
+      "style": {
+        "min": 0,
+        "max": 50,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_VMAX_10M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_VMAX_10M.tif",
+      "variable": "vmax_10m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_VMAX_10M.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "Time-maximum 10 metre wind gust",
+      "short_name": "max_i10fg",
+      "units": "m s**-1",
+      "level_type": "heightAboveGround",
+      "level": 10.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 33.72265625,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2437727,
+      "style": {
+        "min": 0,
+        "max": 40,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_WW",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_WW.tif",
+      "variable": "ww",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_039_WW.grib2",
+      "message": 1,
+      "forecast_hour": 39,
+      "run": "2026100500",
+      "name": "weather interpretation (WMO)",
+      "short_name": "WW",
+      "units": "Numeric",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-06T15:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 96.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 381563,
+      "style": {
+        "min": 0,
+        "max": 99,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "nearest"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CAPE_CON",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CAPE_CON.tif",
+      "variable": "cape_con",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CAPE_CON.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "Convective Available Potential Energy",
+      "short_name": "CAPE_CON",
+      "units": "J kg-1",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 1449.5,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2116240,
+      "style": {
+        "min": 0,
+        "max": 4000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CLCT",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CLCT.tif",
+      "variable": "clct",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CLCT.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "Total Cloud Cover",
+      "short_name": "CLCT",
+      "units": "%",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 100.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2224550,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_PS",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_PS.tif",
+      "variable": "ps",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_PS.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "Surface pressure",
+      "short_name": "sp",
+      "units": "Pa",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 64296.3671875,
+      "max": 106728.3671875,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1807962,
+      "style": {
+        "min": 90000,
+        "max": 105000,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_RELHUM_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_RELHUM_2M.tif",
+      "variable": "relhum_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_RELHUM_2M.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "2 metre relative humidity",
+      "short_name": "2r",
+      "units": "%",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 10.500343322753906,
+      "max": 100.0003433227539,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2398616,
+      "style": {
+        "min": 0,
+        "max": 100,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_T_2M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_T_2M.tif",
+      "variable": "t_2m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_T_2M.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "2 metre temperature",
+      "short_name": "2t",
+      "units": "K",
+      "level_type": "heightAboveGround",
+      "level": 2.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 263.4469299316406,
+      "max": 306.1275939941406,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2058162,
+      "style": {
+        "min": 253.15,
+        "max": 313.15,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_TOT_PREC",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_TOT_PREC.tif",
+      "variable": "tot_prec",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_TOT_PREC.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "Total Precipitation",
+      "short_name": "tp",
+      "units": "kg m**-2",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 147.13671875,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 1834024,
+      "style": {
+        "min": 0,
+        "max": 50,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_VMAX_10M",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_VMAX_10M.tif",
+      "variable": "vmax_10m",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_VMAX_10M.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "Time-maximum 10 metre wind gust",
+      "short_name": "max_i10fg",
+      "units": "m s**-1",
+      "level_type": "heightAboveGround",
+      "level": 10.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 35.544921875,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 2507493,
+      "style": {
+        "min": 0,
+        "max": 40,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "bilinear"
+      }
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_WW",
+      "path": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_WW.tif",
+      "variable": "ww",
+      "source": "2026100500/icon-eu_europe_regular-lat-lon_single-level_2026100500_051_WW.grib2",
+      "message": 1,
+      "forecast_hour": 51,
+      "run": "2026100500",
+      "name": "weather interpretation (WMO)",
+      "short_name": "WW",
+      "units": "Numeric",
+      "level_type": "surface",
+      "level": 0.0,
+      "reference_time": "2026-10-05T00:00:00+00:00",
+      "valid_time": "2026-10-07T03:00:00+00:00",
+      "crs": "EPSG:4326",
+      "bounds": [
+        -23.53125,
+        29.46875,
+        62.53125,
+        70.53125
+      ],
+      "width": 1377,
+      "height": 657,
+      "nodata": -9999.0,
+      "min": 0.0,
+      "max": 96.0,
+      "overviews": [
+        2,
+        4,
+        8
+      ],
+      "size_bytes": 390260,
+      "style": {
+        "min": 0,
+        "max": 99,
+        "colors": [
+          [
+            49,
+            54,
+            149
+          ],
+          [
+            69,
+            117,
+            180
+          ],
+          [
+            116,
+            173,
+            209
+          ],
+          [
+            254,
+            224,
+            144
+          ],
+          [
+            215,
+            48,
+            39
+          ]
+        ],
+        "resampling": "nearest"
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-05T11:47:44.467498+00:00",
+  "scheme": "xyz",
+  "tile_size": 256,
+  "zoom": [
+    3,
+    6
+  ],
+  "bounds": [
+    5.5,
+    47,
+    15.5,
+    55.5
+  ],
+  "tile_count": 600,
+  "layers": [
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CAPE_CON",
+      "cache_key": "0c149317cb2d12f8"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_CLCT",
+      "cache_key": "92247748bfe4079a"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_PS",
+      "cache_key": "f454e93e67fba99c"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_RELHUM_2M",
+      "cache_key": "11d0c30d691189a2"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_T_2M",
+      "cache_key": "c59e2adec8d69895"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_TOT_PREC",
+      "cache_key": "1b293a93f739b2fc"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_VMAX_10M",
+      "cache_key": "cb1a8bf4340f1ae4"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_003_WW",
+      "cache_key": "46cf6d2066101cfc"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CAPE_CON",
+      "cache_key": "3fd9f646b00517ad"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_CLCT",
+      "cache_key": "f4899fa570b5c729"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_PS",
+      "cache_key": "41c4e84e2b444ce1"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_RELHUM_2M",
+      "cache_key": "dc8e560922e90a69"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_T_2M",
+      "cache_key": "9ce70134a15d69b3"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_TOT_PREC",
+      "cache_key": "47f644ce5aac5cf2"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_VMAX_10M",
+      "cache_key": "ab5ea4fd4c6a8faa"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_015_WW",
+      "cache_key": "46f52566af41882e"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CAPE_CON",
+      "cache_key": "7dc7e823f471bd4d"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_CLCT",
+      "cache_key": "1892ea73c40cc5bf"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_PS",
+      "cache_key": "385d83ca163388ee"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_RELHUM_2M",
+      "cache_key": "25155dca24888359"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_T_2M",
+      "cache_key": "b49ac3a3621e699d"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_TOT_PREC",
+      "cache_key": "2ddd96fea0b06b8a"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_VMAX_10M",
+      "cache_key": "f64615ca23d7f0ae"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_027_WW",
+      "cache_key": "c314a04ddb8b8236"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CAPE_CON",
+      "cache_key": "4cea47c800e2fe14"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_CLCT",
+      "cache_key": "350a1a7bee258670"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_PS",
+      "cache_key": "c01719172af9c53a"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_RELHUM_2M",
+      "cache_key": "d7be8398d4b27359"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_T_2M",
+      "cache_key": "35c0097e736ae334"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_TOT_PREC",
+      "cache_key": "a1580c4703ea6682"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_VMAX_10M",
+      "cache_key": "28f67d0d3232e286"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_039_WW",
+      "cache_key": "b20fa180be8840af"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CAPE_CON",
+      "cache_key": "ee6ee34613df736f"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_CLCT",
+      "cache_key": "d25a83776becd640"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_PS",
+      "cache_key": "ba3dc28ad21b2a0c"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_RELHUM_2M",
+      "cache_key": "32b81c6dfeb38e53"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_T_2M",
+      "cache_key": "6669e973dc906659"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_TOT_PREC",
+      "cache_key": "7f5e4967a4040af6"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_VMAX_10M",
+      "cache_key": "dd02a6717f15c278"
+    },
+    {
+      "id": "2026100500__icon-eu_europe_regular-lat-lon_single-level_2026100500_051_WW",
+      "cache_key": "e21e34529f866f3f"
+    }
+  ]
+}
