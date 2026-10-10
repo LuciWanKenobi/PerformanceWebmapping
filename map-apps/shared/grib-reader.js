@@ -1,4 +1,9 @@
 import { recordWorkerResource } from './benchmark/network.js';
+import { createGribModuleLoader } from './grib-wasm.js';
+
+// Lazy, page-wide promise: concurrent layers and later trials reuse this code.
+const loadDecoderModule = createGribModuleLoader(async () =>
+  (await import('@meri-imperiumi/eccodes-wasm/build/eccodes/eccodes.wasm?url')).default);
 
 export function createGribReader(url, layer) {
   const worker = new Worker(new URL('./grib.worker.js', import.meta.url), { type: 'module' });
@@ -28,7 +33,11 @@ export function createGribReader(url, layer) {
   };
   worker.onerror = (event) => fail(new Error(event.message || 'GRIB2 worker failed. Use a recent browser with WebAssembly memory64 support.'));
   worker.onmessageerror = () => fail(new Error('Could not read the GRIB2 worker response.'));
-  worker.postMessage({ type: 'init', url, layer });
+  loadDecoderModule().then((module) => {
+    if (!disposed && !failed) worker.postMessage({ type: 'init', url, layer, module });
+  }).catch((error) => {
+    if (!disposed && !failed) { fail(error); worker.terminate(); }
+  });
   return {
     ready,
     dispose() {

@@ -10,7 +10,7 @@ export function createGribWorkerHandler(createModule, postMessage, fetchFile = f
     try {
       if (type === 'init') {
         layer = data.layer;
-        const [module, response] = await Promise.all([createModule(), fetchFile(data.url,
+        const [module, response] = await Promise.all([createModule(data.module), fetchFile(data.url,
           layer.requestKey ? { cache: 'no-store' } : undefined)]);
         if (!response.ok) throw new Error(`GRIB2 server returned HTTP ${response.status}.`);
         grid = decodeGrib(module, new Uint8Array(await response.arrayBuffer()), layer.message, layer.nodata);
