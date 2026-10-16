@@ -1,0 +1,5 @@
+.qa/
+*.tar.gz
+*.log
+node_modules/
+.sites-source.git/

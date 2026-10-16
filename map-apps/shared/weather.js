@@ -6,10 +6,12 @@ import { createGlCogOverlay, createGlRasterOverlay } from './cog-reader.js';
 import { createGribReader } from './grib-reader.js';
 import { createRasterWorkload } from './benchmark/raster-workload.js';
 import { waitForMapEvent } from './benchmark/timing.js';
+import { trackGlTiles } from './benchmark/raster-coverage-adapters.js';
 
 export function rasterUrl(url, layer) {
   if (!layer.requestKey) return url;
-  return `${url}${url.includes('?') ? '&' : '?'}_map_request=${encodeURIComponent(layer.requestKey)}&_map=${layer.mapIndex}`;
+  return `${url}${url.includes('?') ? '&' : '?'}_map_request=${encodeURIComponent(layer.requestKey)}&_map=${layer.mapIndex}` +
+    (layer.requestScope ? `&_benchmark_scope=${encodeURIComponent(layer.requestScope)}` : '');
 }
 
 export function cogUrl(layer) {
@@ -126,6 +128,10 @@ export function withWeather(adapter, weather) {
     clearRasters: rasters.clear,
     settleRasters: rasters.settle,
     restyleRasters: rasters.restyle,
+    sampleRasterCoverage: rasters.sampleCoverage,
+    rasterWorkStats: rasters.workStats,
+    measureReadiness: adapter.measureReadiness ? (signal, start, { hasRasters, afterReadyFrames = 0 }) =>
+      adapter.measureReadiness(signal, start, { settleRaster: hasRasters ? rasters.settleMap : undefined, afterReadyFrames }) : undefined,
     async assertColorTables(requests, signal) {
       if (!requests.some(({ mode }) => mode === 'wms')) return;
       const response = await fetch(WMS_SERVER + '/health', { cache: 'no-store', signal: AbortSignal.any([
@@ -176,11 +182,13 @@ export function glWeatherFactory(map) {
       paint: { 'raster-opacity': 0.7, 'raster-fade-duration': 0,
         'raster-resampling': layer.style.resampling === 'nearest' ? 'nearest' : 'linear' },
     }, 'stations');
+    const tracking = trackGlTiles(map, layer, id, onError);
     return {
+      sampleCoverage: tracking.sampleCoverage, workStats: tracking.workStats,
       restyle: mode === 'wms' ? () => map.getSource(id).setTiles([weatherTileUrl(restyledLayer(layer), mode)]) : undefined,
       settle: (signal) => waitForMapEvent({ on: map.on.bind(map), off: map.off.bind(map),
         trigger: () => map.triggerRepaint() }, 'idle', signal),
-      remove() { map.off('error', error); map.removeLayer(id); map.removeSource(id); },
+      remove() { tracking.dispose(); map.off('error', error); map.removeLayer(id); map.removeSource(id); },
       setVisible(visible) { map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); },
     };
   };

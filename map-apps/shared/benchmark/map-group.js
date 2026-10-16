@@ -1,12 +1,14 @@
-import { afterFrames } from './timing.js';
+import { afterFrames, abortable } from './timing.js';
+import { summarizeMapReadiness } from './stats.js';
 import { COG_SERVER, WMS_SERVER } from '../config.js';
+import { supportsRasterConnections } from './server-policy.js';
 
 export function validateMapCount(count) {
   if (!Number.isInteger(count) || count < 1 || count > 20) throw new Error('Choose 1–20 maps.');
 }
 
-export function isolatedRaster(layer, mapIndex) {
-  return { ...layer, mapIndex, requestKey: crypto.randomUUID() };
+export function isolatedRaster(layer, mapIndex, requestScope) {
+  return { ...layer, mapIndex, requestScope, requestKey: crypto.randomUUID() };
 }
 
 export async function assertRasterIsolation(requests, signal) {
@@ -25,6 +27,9 @@ export async function assertRasterIsolation(requests, signal) {
     }
     if (!response.ok || !metrics?.cacheIsolationSupported) {
       throw new Error('Restart the updated ' + label + ' at ' + server + ': independent map requests require cache-isolation support.');
+    }
+    if (!supportsRasterConnections(metrics)) {
+      throw new Error('Restart the updated ' + label + ' at ' + server + ': HTTP/1.1 connection handling and disconnect accounting are required.');
     }
     if (server === WMS_SERVER && requests.some(({ mode }) => mode === 'xyz')) {
       const healthResponse = await fetch(server + '/health', { cache: 'no-store', signal: AbortSignal.any([
@@ -46,7 +51,7 @@ function sameCamera(a, b) {
 // DOM layout is injected so synchronization and failure cleanup can be tested.
 export function createMapGroup(first, createMap, layout) {
   const entries = [first], listeners = new Map(), countListeners = new Set(), errorWatchers = new Map();
-  let muted = false, stationsVisible = true;
+  let muted = false, stationsVisible = true, requestScope;
   const mute = (operation) => { const before = muted; muted = true; try { return operation(); } finally { muted = before; } };
   const resize = () => entries.forEach((entry) => entry.adapter.resize?.());
   function watch(entry, callback, registrations) {
@@ -76,6 +81,13 @@ export function createMapGroup(first, createMap, layout) {
     library: first.adapter.library, version: first.adapter.version,
     renderer: first.adapter.renderer, readySignal: `all maps: ${first.adapter.readySignal}`,
     size: layout.size, resize,
+    setRequestScope(scope) { requestScope = scope; },
+    setViewportLayout(mode, width, height) {
+      if (!['fixed-total', 'fixed-map'].includes(mode) || !Number.isInteger(width) || !Number.isInteger(height) ||
+          width < 128 || width > 2048 || height < 128 || height > 2048) throw new Error('Choose map dimensions between 128 and 2048 pixels.');
+      layout.configure?.(mode, width, height); layout.arrange(entries.length); resize();
+    },
+    viewportLayout: () => layout.configuration?.() ?? { mode: 'fixed-total' },
     mapCount: () => entries.length,
     viewports: () => entries.map((entry, index) => ({ mapIndex: index + 1,
       width: entry.adapter.size().width, height: entry.adapter.size().height })),
@@ -178,6 +190,7 @@ export function createMapGroup(first, createMap, layout) {
     },
     prepare() {
       const snapshots = [];
+      const camera = entries[0]?.getCamera();
       mute(() => {
         try { for (const entry of entries) snapshots.push(entry.adapter.prepare()); }
         catch (error) {
@@ -185,12 +198,22 @@ export function createMapGroup(first, createMap, layout) {
           throw error;
         }
       });
-      return snapshots;
+      return { maps: snapshots, camera };
     },
-    restore(snapshots) {
+    restore({ maps: snapshots, camera }) {
       let error;
       mute(() => entries.forEach((entry, i) => {
-        try { entry.adapter.restore(snapshots[i]); } catch (failure) { error ??= failure; }
+        try {
+          if (snapshots[i] !== undefined) entry.adapter.restore(snapshots[i]);
+          else {
+            // A suite can grow the grid during fresh initialization. New panes
+            // have no old snapshot: preserve their hidden basemap, then apply
+            // the original synchronized camera and station visibility.
+            entry.adapter.restore(entry.adapter.prepare());
+            if (camera) entry.adapter.setCamera(camera);
+            entry.setStationsVisible(stationsVisible);
+          }
+        } catch (failure) { error ??= failure; }
       }));
       if (error) throw error;
     },
@@ -201,6 +224,25 @@ export function createMapGroup(first, createMap, layout) {
     restylePoints(style) { entries.forEach((entry) => entry.adapter.restylePoints(style)); },
     clearPoints() { entries.forEach((entry) => entry.adapter.clearPoints()); },
     settle(signal) { return Promise.all(entries.map((entry) => entry.adapter.settle(signal))); },
+    async measureReadiness(signal, start, { settleRaster, afterReadyFrames = 0 } = {}) {
+      const controller = new AbortController();
+      const combined = AbortSignal.any([signal, controller.signal]);
+      try {
+        const measurements = await abortable(Promise.all(entries.map(async (entry, index) => {
+          combined.throwIfAborted();
+          await settleRaster?.(index + 1, combined);
+          const rasterReadyMs = settleRaster ? performance.now() - start : null;
+          const nativeStart = performance.now();
+          await entry.adapter.settle(combined);
+          if (afterReadyFrames) await afterFrames(afterReadyFrames, combined);
+          combined.throwIfAborted(); entry.adapter.assertReady?.();
+          const ready = performance.now();
+          return { mapIndex: index + 1, readyMs: ready - start, rasterReadyMs,
+            nativeReadyWaitMs: ready - nativeStart };
+        })), combined);
+        return summarizeMapReadiness(measurements);
+      } catch (error) { controller.abort(error); throw error; }
+    },
     assertCacheIsolation: assertRasterIsolation,
     watchErrors(callback) {
       const registrations = new Map();
@@ -214,14 +256,27 @@ export function createMapGroup(first, createMap, layout) {
     createOverlay(layer, mode, onError, id = 'weather') {
       const overlays = [];
       try {
-        entries.forEach((entry, i) => overlays.push(entry.createOverlay(isolatedRaster(layer, i + 1), mode,
+        entries.forEach((entry, i) => overlays.push(entry.createOverlay(isolatedRaster(layer, i + 1, requestScope), mode,
           (error) => onError(new Error(`Map ${i + 1}: ${error?.message || 'Raster failed to load.'}`)), id)));
       } catch (error) { overlays.forEach((overlay) => overlay.remove()); throw error; }
       const ready = Promise.all(overlays.map((overlay) => overlay.ready));
       ready.catch(() => {});
+      let restyles = [];
       return {
         ready,
-        restyle: mode === 'xyz' ? undefined : (style) => Promise.all(overlays.map((overlay) => overlay.restyle(style))),
+        sampleCoverage: () => overlays.map((overlay, index) => ({ ...overlay.sampleCoverage?.(), mapIndex: index + 1 })),
+        workStats: () => overlays.flatMap((overlay, index) => (overlay.workStats?.() ?? [])
+          .map((counter) => ({ ...counter, mapIndex: index + 1 }))),
+        restyle: mode === 'xyz' ? undefined : (style) => {
+          restyles = overlays.map((overlay) => overlay.restyle(style));
+          return Promise.all(restyles);
+        },
+        async settleMap(mapIndex, signal) {
+          const overlay = overlays[mapIndex - 1];
+          await overlay.ready;
+          await restyles[mapIndex - 1];
+          await overlay.settle(signal);
+        },
         settle: (signal) => Promise.all(overlays.map((overlay) => overlay.settle(signal))),
         remove: () => overlays.forEach((overlay) => overlay.remove()),
         setVisible: (visible) => overlays.forEach((overlay) => overlay.setVisible(visible)),
@@ -243,13 +298,20 @@ export function mountMapGroup(first, createMap) {
     return surface;
   }
   pane(first.surface, 1);
+  let mode = 'fixed-total', width = 400, height = 300;
   const layout = {
+    configure(nextMode, nextWidth, nextHeight) { mode = nextMode; width = nextWidth; height = nextHeight; },
+    configuration: () => ({ mode, mapWidth: mode === 'fixed-map' ? width : null, mapHeight: mode === 'fixed-map' ? height : null }),
     add(index) { const surface = document.createElement('div'); surface.id = `map-${index}`; return pane(surface, index); },
     remove(surface) { surface.parentElement.remove(); },
     arrange(count) {
-      const cols = Math.ceil(Math.sqrt(count));
-      grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-      grid.style.gridTemplateRows = `repeat(${Math.ceil(count / cols)}, minmax(0, 1fr))`;
+      const cols = mode === 'fixed-map' ? Math.min(count, Math.max(1, Math.floor(frame.clientWidth / (width + 3)))) : Math.ceil(Math.sqrt(count));
+      frame.style.overflow = mode === 'fixed-map' ? 'auto' : '';
+      grid.style.inset = mode === 'fixed-map' ? '0 auto auto 0' : '0';
+      grid.style.width = mode === 'fixed-map' ? `${cols * (width + 3) - 3}px` : '';
+      grid.style.height = mode === 'fixed-map' ? `${Math.ceil(count / cols) * (height + 3) - 3}px` : '';
+      grid.style.gridTemplateColumns = `repeat(${cols}, ${mode === 'fixed-map' ? width + 'px' : 'minmax(0, 1fr)'})`;
+      grid.style.gridTemplateRows = `repeat(${Math.ceil(count / cols)}, ${mode === 'fixed-map' ? height + 'px' : 'minmax(0, 1fr)'})`;
     },
     size: () => grid.getBoundingClientRect(),
   };

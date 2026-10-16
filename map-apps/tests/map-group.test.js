@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapGroup, validateMapCount, assertRasterIsolation } from '../shared/benchmark/map-group.js';
 import { cogUrl, gribUrl, weatherTileUrl } from '../shared/weather.js';
+import { createRasterWorkload } from '../shared/benchmark/raster-workload.js';
 
 function frames(t) {
   const raf = globalThis.requestAnimationFrame, cancel = globalThis.cancelAnimationFrame;
@@ -51,6 +52,70 @@ function harness(factory) {
   }, layout);
   return { group, entries, panes, arrangements };
 }
+
+test('per-map raster and style readiness do not wait behind the slowest map barrier', async (t) => {
+  frames(t);
+  const { group, entries } = harness();
+  const signal = new AbortController().signal;
+  await group.setMapCount(2, signal);
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'performance');
+  let now = 0;
+  Object.defineProperty(globalThis, 'performance', { configurable: true, value: { now: () => now } });
+  t.after(() => Object.defineProperty(globalThis, 'performance', descriptor));
+  const deferred = () => { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; };
+  const loading = [deferred(), deferred()], styling = [deferred(), deferred()];
+  const observed = [];
+  entries.forEach((entry, index) => {
+    entry.createOverlay = () => ({ ready: loading[index].promise, restyle: () => styling[index].promise,
+      settle: async () => {}, remove() {}, setVisible() {} });
+    entry.adapter.assertReady = () => observed.push(index + 1);
+  });
+  group.setRequestScope('private-trial');
+  const rasters = createRasterWorkload(group.createOverlay);
+  rasters.add([{ layer: { id: 'cape' }, mode: 'cog' }]);
+  const measured = group.measureReadiness(signal, 0, { settleRaster: rasters.settleMap });
+  now = 10; loading[1].resolve(); await new Promise(setImmediate);
+  assert.deepEqual(observed, [2], 'map 2 can report readiness while map 1 is still loading');
+  now = 40; loading[0].resolve();
+  const row = await measured;
+  assert.equal(row.mapReadySpreadMs, 30);
+  assert.deepEqual(row.mapReadiness.map(({ readyMs }) => readyMs), [40, 10]);
+  assert.equal(row.mapReadiness[1].rasterReadyMs, 10);
+  const restyling = rasters.restyle({ rasterColorTable: 'benchmark' });
+  const restyled = group.measureReadiness(signal, 40, { settleRaster: rasters.settleMap });
+  now = 50; styling[0].resolve(); await new Promise(setImmediate);
+  assert.deepEqual(observed, [2, 1, 1]);
+  now = 80; styling[1].resolve();
+  assert.equal((await restyled).mapReadySpreadMs, 30);
+  await restyling; rasters.clear();
+});
+
+test('private trial scope reaches every raster URL and is separate from per-load request keys', async (t) => {
+  frames(t);
+  const { group, entries } = harness();
+  await group.setMapCount(2, new AbortController().signal);
+  group.setRequestScope('trial-one');
+  const overlay = group.createOverlay({ id: 'cape', path: 'cape.tif', source: 'cape.grib2' }, 'grib', () => {});
+  for (const { calls } of entries) for (const layer of calls.rasters) {
+    for (const url of [cogUrl(layer), gribUrl(layer), weatherTileUrl(layer, 'wms'), weatherTileUrl(layer, 'xyz')]) {
+      assert.equal(new URL(url).searchParams.get('_benchmark_scope'), 'trial-one');
+      assert.notEqual(layer.requestKey, 'trial-one');
+    }
+  }
+  overlay.remove();
+});
+
+test('fresh initialization can increase map count and restore new panes without an old snapshot', async (t) => {
+  frames(t);
+  const { group, entries } = harness();
+  group.setCamera({ center: [7, 53], zoom: 5.5 });
+  const state = group.prepare();
+  await group.initializeMaps(2, new AbortController().signal, { center: [12, 52], zoom: 4 });
+  assert.doesNotThrow(() => group.restore(state));
+  assert.equal(entries[1].calls.restored, 1);
+  assert.equal(entries[2].calls.restored, 1);
+  assert.deepEqual(entries[2].getCamera(), { center: [7, 53], zoom: 5.5 });
+});
 
 test('map count accepts integers 1–20 only', () => {
   for (let count = 1; count <= 20; count++) validateMapCount(count);
@@ -165,12 +230,17 @@ test('benchmark requires updated isolation-aware raster servers, once per server
   t.after(() => { globalThis.fetch = original; });
   const calls = [];
   globalThis.fetch = async (url, options) => { calls.push(url); assert.equal(options.cache, 'no-store');
-    return { ok: true, json: async () => ({ cacheIsolationSupported: true, xyzDelivery: 'precomputed-only', xyzColorRestyleSupported: false }) }; };
+    return { ok: true, json: async () => ({ cacheIsolationSupported: true, disconnectAccountingSupported: true,
+      connectionPolicy: { version: 1, httpProtocol: 'HTTP/1.1', requestQueueSize: 256 },
+      xyzDelivery: 'precomputed-only', xyzColorRestyleSupported: false }) }; };
   await assertRasterIsolation([{ mode: 'wms' }, { mode: 'xyz' }, { mode: 'cog' }, { mode: 'grib' }], new AbortController().signal);
   assert.equal(calls.length, 3);
   assert.equal(calls.filter((url) => url.endsWith('/health')).length, 1);
-  globalThis.fetch = async () => ({ ok: true, json: async () => ({ cacheIsolationSupported: true }) });
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ cacheIsolationSupported: true,
+    disconnectAccountingSupported: true, connectionPolicy: { version: 1, httpProtocol: 'HTTP/1.1', requestQueueSize: 256 } }) });
   await assert.rejects(assertRasterIsolation([{ mode: 'xyz' }]), /precomputed tiles/);
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ cacheIsolationSupported: true }) });
+  await assert.rejects(assertRasterIsolation([{ mode: 'grib' }]), /HTTP\/1.1 connection handling and disconnect accounting/);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
   await assert.rejects(assertRasterIsolation([{ mode: 'cog' }], new AbortController().signal), /Restart the updated/);
 });

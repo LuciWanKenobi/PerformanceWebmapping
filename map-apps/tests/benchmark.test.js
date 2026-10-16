@@ -153,7 +153,7 @@ test('runner exports aggregate workload and per-map dimensions for 20 synchroniz
   adapter.viewports = () => Array.from({ length: 20 }, (_, i) => ({ mapIndex: i + 1, width: 200, height: 150 }));
   const [row] = await runBenchmark(adapter, { ...options, mapCount: 20, repetitions: 1, warmup: false },
     { signal: new AbortController().signal });
-  assert.equal(row.schemaVersion, 8);
+  assert.equal(row.schemaVersion, 10);
   assert.equal(row.mapCount, 20);
   assert.equal(row.pointsPerMap, 200);
   assert.equal(row.totalPoints, 4000);
@@ -209,6 +209,25 @@ test('failure during insertion still clears layers and restores the map', async 
   await assert.rejects(runBenchmark(adapter, options, { signal: new AbortController().signal }), /renderer failure/);
   assert.equal(adapter.calls.restores, 1);
   assert.equal(adapter.calls.clears, 2);
+});
+
+test('failed trials export diagnostics without successful rows and await persistent result writes', async (t) => {
+  fakeBrowser(t);
+  const adapter = fakeAdapter(), failures = [], results = [];
+  adapter.addPoints = () => { throw new Error('renderer failure'); };
+  await assert.rejects(runBenchmark(adapter, { ...options, warmup: false }, {
+    signal: new AbortController().signal, onFailure: async (row) => { await Promise.resolve(); failures.push(row); },
+    onResult: (row) => results.push(row),
+  }), /renderer failure/);
+  assert.equal(results.length, 0); assert.equal(failures.length, 1);
+  assert.equal(failures[0].recordType, 'failed'); assert.equal(failures[0].schemaVersion, 10);
+  assert.equal(failures[0].gpuMemoryBytes, null); assert.ok(failures[0].memorySampleCount > 0);
+  const good = fakeAdapter();
+  let saved = false;
+  await runBenchmark(good, { ...options, repetitions: 1, warmup: false }, {
+    signal: new AbortController().signal, onResult: async () => { await new Promise(setImmediate); saved = true; },
+  });
+  assert.equal(saved, true);
 });
 
 test('abort during animation cancels pending frame callbacks and restores view', async (t) => {
@@ -275,12 +294,14 @@ test('mixed workload replaces points and forecast, exporting each measured phase
   adapter.clearRasters = () => events.push(['clear']);
   adapter.settleRasters = (signal) => { events.push(['ready']); return afterFrames(3, signal); };
   adapter.updatePoints = (data) => { events.push(['points', data]); };
+  adapter.sampleRasterCoverage = () => [0, 1].map((rasterIndex) => ({ mapIndex: 1, rasterIndex,
+    view: [0, 0, 10, 10], extent: [0, 0, 10, 10], rectangles: [[0, 0, 5, 10]], method: 'test' }));
   const rows = await runBenchmark(adapter, { ...options, repetitions: 1, warmup: false,
     rasterLayers: initialRasters, nextRasterLayers: nextRasters,
     timeChange: { fraction: 0.5, points: true, rasters: true },
   }, { signal: new AbortController().signal });
   const row = rows[0];
-  assert.equal(row.schemaVersion, 8);
+  assert.equal(row.schemaVersion, 10);
   assert.equal(row.pointLayerCount, 2);
   assert.equal(row.rasterLayerCount, 2);
   assert.match(row.rasterResolutionPolicy, /source-native ceiling/);
@@ -292,6 +313,13 @@ test('mixed workload replaces points and forecast, exporting each measured phase
   assert.equal(row.beforeChangeMeasuredMotionMs, 1500);
   assert.equal(row.afterChangeMeasuredMotionMs, 1500);
   assert.equal(row.measuredMotionMs, 3000);
+  assert.equal(row.motionCoverageObservedMs, 3000); // Stationary time-change waits are excluded.
+  assert.equal(row.motionRasterCoveragePercent, 50);
+  assert.equal(row.motionRasterIncompleteMs, 3000);
+  assert.equal(row.motionRasterLongestGapMs, 1500); // Each motion segment has its own gap.
+  assert.equal(row.motionAllMapsCompletePercent, 0);
+  assert.equal(row.motionLayerCoverage.length, 2);
+  assert.equal(row.postMotionRasterCatchUpMs, 100);
   assert.ok(row.timeChangeFrameSamples > 0);
   assert.equal(row.updatedPointSeed, 43);
   assert.deepEqual(events.filter(([type]) => type === 'rasters').map(([, data]) => data), [initialRasters, nextRasters]);

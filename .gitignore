@@ -6,4 +6,7 @@ map-apps/dist/
 *.log
 .npm-cache/
 .local-services/
-test_data/
+test_data/*
+!test_data/tests/
+test_data/tests/*
+!test_data/tests/*.py

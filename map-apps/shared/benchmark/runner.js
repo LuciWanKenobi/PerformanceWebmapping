@@ -1,6 +1,7 @@
 import { cameraAt, createPointLayers, DATASET_SEED, POINT_BOUNDS, MOTION_DURATIONS,
   CAMERA_PATH, CAMERA_WAYPOINTS } from './data.js';
-import { summarizeFrames } from './stats.js';
+import { summarizeFrames, summarizeMapReadiness } from './stats.js';
+import { observeMemory, observeStages } from './measurements.js';
 import { rasterNativeZoom } from '../raster-resolution.js';
 import { afterFrames, abortable } from './timing.js';
 import { colorTableStyle, COLOR_TABLES } from '../color-tables.js';
@@ -9,6 +10,7 @@ import { observeNetwork } from './network.js';
 import { startTelemetry } from './telemetry.js';
 import { validateMapCount } from './map-group.js';
 import { COLOR_RESTYLE } from './restyle.js';
+import { createMotionCoverage, COVERAGE_PERIOD_MS, COMPLETE_COVERAGE } from './coverage.js';
 
 export function validateOptions(options) {
   validateMapCount(options.mapCount ?? 1);
@@ -18,6 +20,7 @@ export function validateOptions(options) {
       ![1, 3, 5].includes(options.repetitions) || typeof options.warmup !== 'boolean' ||
       (options.colorRestyle !== undefined && typeof options.colorRestyle !== 'boolean') ||
       (options.measureCpu !== undefined && typeof options.measureCpu !== 'boolean') ||
+      (options.measureBrowserMemory !== undefined && typeof options.measureBrowserMemory !== 'boolean') ||
       (options.measureServerMetrics !== undefined && typeof options.measureServerMetrics !== 'boolean')) {
     throw new Error('Invalid benchmark configuration.');
   }
@@ -72,25 +75,26 @@ function observeLongTasks() {
   };
 }
 
-export function animateCamera(adapter, durationMs, signal, from = 0, to = 1) {
+export function animateCamera(adapter, durationMs, signal, from = 0, to = 1, coverage) {
   return new Promise((resolve, reject) => {
     const intervals = [];
     let frame;
     let start;
     let previous;
-    const cleanup = () => { cancelAnimationFrame(frame); signal.removeEventListener('abort', abort); };
+    const cleanup = (now = performance.now()) => { coverage?.end(now); cancelAnimationFrame(frame); signal.removeEventListener('abort', abort); };
     const abort = () => { cleanup(); reject(signal.reason); };
     const tick = (now) => {
       try {
         if (signal.aborted) return abort();
-        start ??= now;
+        if (start == null) { start = now; coverage?.begin(now); }
         if (previous !== undefined) intervals.push(now - previous);
         previous = now;
         const progress = Math.min(1, (now - start) / durationMs);
         adapter.setCamera(cameraAt(from + progress * (to - from)));
+        coverage?.sample(now);
         // A synchronous map error can abort from inside setCamera().
         if (signal.aborted) return abort();
-        if (progress === 1) { cleanup(); resolve(intervals); }
+        if (progress === 1) { cleanup(now); resolve(intervals); }
         else frame = requestAnimationFrame(tick);
       } catch (error) { cleanup(); reject(error); }
     };
@@ -100,9 +104,17 @@ export function animateCamera(adapter, durationMs, signal, from = 0, to = 1) {
   });
 }
 
-async function settleAll(adapter, hasRasters, signal) {
+async function settleAll(adapter, hasRasters, signal, start = null, afterReadyFrames = 0) {
+  if (start != null && adapter.measureReadiness) return adapter.measureReadiness(signal, start, { hasRasters, afterReadyFrames });
   if (hasRasters) await adapter.settleRasters(signal);
   await adapter.settle(signal);
+  if (afterReadyFrames) await afterFrames(afterReadyFrames, signal);
+  return summarizeMapReadiness();
+}
+
+function prefixedReadiness(prefix, readiness) {
+  return Object.fromEntries(Object.entries(readiness).map(([key, value]) =>
+    [`${prefix}${key[0].toUpperCase()}${key.slice(1)}`, value]));
 }
 
 function prefixedFrames(prefix, intervals) {
@@ -121,7 +133,7 @@ async function sampleUpdate(operation, signal) {
 }
 
 // Adapter owns native map operations; this function owns the identical protocol.
-export async function runBenchmark(adapter, options, { signal, onProgress = () => {}, onResult = () => {} }) {
+export async function runBenchmark(adapter, options, { signal, onProgress = () => {}, onResult = () => {}, onFailure = () => {} }) {
   validateOptions(options);
   signal.throwIfAborted();
   const datasets = options.layerCount ? createPointLayers(options.pointsPerLayer, options.layerCount) : [];
@@ -134,7 +146,7 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
   const restyleStatus = !options.colorRestyle ? 'disabled' : !canRestyle ? 'unsupported'
     : skippedRestyleRasters ? 'partial' : 'applied';
   const mapCount = options.mapCount ?? 1;
-  if (adapter.mapCount && adapter.mapCount() !== mapCount) throw new Error('Wait for the requested map grid to finish loading.');
+  if (adapter.mapCount && adapter.mapCount() !== mapCount && !adapter.initializeMaps) throw new Error('Wait for the requested map grid to finish loading.');
   await adapter.assertCacheIsolation?.(rasters, signal);
   if (options.colorRestyle) await adapter.assertColorTables?.(rasters, signal);
   if (rasters.length && (!adapter.addRasters || !adapter.settleRasters)) throw new Error('Raster benchmark adapter unavailable.');
@@ -145,12 +157,15 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
   const results = [];
   const batchId = crypto.randomUUID();
   const snapshot = adapter.prepare();
+  let failureClearedRasters = false;
   try {
     const trialCount = options.repetitions + Number(options.warmup);
     for (let index = 0; index < trialCount; index++) {
       signal.throwIfAborted();
       const warmup = options.warmup && index === 0;
       const repetition = index + 1 - Number(options.warmup);
+      const requestScope = crypto.randomUUID();
+      adapter.setRequestScope?.(requestScope);
       onProgress(warmup ? 'Warm-up (discarded)' : `Trial ${repetition} of ${options.repetitions}`);
       adapter.clearPoints();
       adapter.clearRasters?.();
@@ -167,24 +182,27 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
       // HTTP snapshots happen outside the measured trial. Their own requests
       // are excluded from both browser resource totals and server counters.
       const telemetry = await startTelemetry({ measureCpu: options.measureCpu,
-        rasters, measureServerMetrics: options.measureServerMetrics !== false, signal });
+        rasters, measureServerMetrics: options.measureServerMetrics !== false, requestScope, signal });
       const heapBeforeBytes = heapBytes();
       const tasks = observeLongTasks();
       const network = observeNetwork();
       const start = performance.now();
+      const memory = observeMemory(100, Boolean(options.measureBrowserMemory)), stages = observeStages();
+      const motionCoverage = createMotionCoverage(adapter, rasters.length > 0, rasters.length * mapCount);
+      let timeChangeStart = null, timeChangeEnd = null, colorRestyleStart = null, colorRestyleEnd = null;
+      let completed = false;
       try {
         adapter.addPoints(datasets);
         if (rasters.length) adapter.addRasters(rasters);
         const submitMs = performance.now() - start;
-        await settleAll(adapter, rasters.length > 0, signal);
+        const mapReadiness = await settleAll(adapter, rasters.length > 0, signal, start);
         const layerReadyMs = performance.now() - start;
         let before = [], after = [], updateIntervals = [], intervals;
         let timeChangeSubmitMs = null, timeChangeReadyMs = null, preChangeSettleMs = null;
-        let timeChangeStart = null, timeChangeEnd = null;
-        let colorRestyleStart = null, colorRestyleEnd = null;
         let colorRestyleSubmitMs = null, colorRestyleReadyMs = null, restyleIntervals = [];
+        let timeChangeReadiness = summarizeMapReadiness(), colorRestyleReadiness = summarizeMapReadiness();
         if (change) {
-          before = await animateCamera(adapter, options.durationSeconds * 1000 * change.fraction, signal, 0, change.fraction);
+          before = await animateCamera(adapter, options.durationSeconds * 1000 * change.fraction, signal, 0, change.fraction, motionCoverage);
           const settleStart = performance.now();
           await settleAll(adapter, rasters.length > 0, signal);
           preChangeSettleMs = performance.now() - settleStart;
@@ -197,14 +215,17 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
             if (change.points) adapter.updatePoints(updatedDatasets);
             if (change.rasters) adapter.addRasters(options.nextRasterLayers);
             timeChangeSubmitMs = performance.now() - updateStart;
-            await settleAll(adapter, rasters.length > 0, signal);
+            timeChangeReadiness = await settleAll(adapter, rasters.length > 0, signal, updateStart);
             timeChangeReadyMs = performance.now() - updateStart;
             timeChangeEnd = performance.now();
           }, signal);
-          after = await animateCamera(adapter, options.durationSeconds * 1000 * (1 - change.fraction), signal, change.fraction, 1);
+          after = await animateCamera(adapter, options.durationSeconds * 1000 * (1 - change.fraction), signal, change.fraction, 1, motionCoverage);
           intervals = [...before, ...after];
-        } else intervals = await animateCamera(adapter, options.durationSeconds * 1000, signal);
-        await settleAll(adapter, rasters.length > 0, signal);
+        } else intervals = await animateCamera(adapter, options.durationSeconds * 1000, signal, 0, 1, motionCoverage);
+        const postMotionStart = performance.now();
+        const postMotionReadiness = await settleAll(adapter, rasters.length > 0, signal, postMotionStart);
+        const postMotionSettleMs = performance.now() - postMotionStart;
+        const motionCoverageResult = motionCoverage.finish();
         if (options.colorRestyle && canRestyle) {
           onProgress((warmup ? 'Warm-up' : 'Trial ' + repetition) + ' · applying color restyle');
           await afterFrames(2, signal);
@@ -213,17 +234,21 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
             if (options.layerCount) adapter.restylePoints(COLOR_RESTYLE);
             const restyling = restyleRasters.length ? adapter.restyleRasters(COLOR_RESTYLE) : undefined;
             colorRestyleSubmitMs = performance.now() - colorRestyleStart;
-            await abortable(Promise.resolve(restyling), signal);
-            await settleAll(adapter, rasters.length > 0, signal);
-            // Allow a paint opportunity after all recoloring and native readiness.
-            // This is a presentation proxy, not a GPU timestamp.
-            await afterFrames(2, signal);
+            if (adapter.measureReadiness) {
+              const readiness = settleAll(adapter, rasters.length > 0, signal, colorRestyleStart, 2);
+              [colorRestyleReadiness] = await abortable(Promise.all([readiness, Promise.resolve(restyling)]), signal);
+            } else {
+              await abortable(Promise.resolve(restyling), signal);
+              colorRestyleReadiness = await settleAll(adapter, rasters.length > 0, signal, colorRestyleStart, 2);
+            }
             colorRestyleEnd = performance.now();
             colorRestyleReadyMs = colorRestyleEnd - colorRestyleStart;
           }, signal);
         }
         const end = performance.now();
         const heapAfterBytes = heapBytes();
+        const memoryResult = memory.finish(start, end);
+        const stageResult = stages.finish(start, end, timeChangeStart, timeChangeEnd, colorRestyleStart, colorRestyleEnd);
         const telemetryResult = await telemetry.finish();
         // Allow the observer to receive entries generated by the final task.
         await afterFrames(2, signal);
@@ -233,7 +258,12 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
         if (warmup) continue;
         const size = adapter.size();
         const result = {
-          schemaVersion: 8,
+          schemaVersion: 10,
+          recordType: 'completed',
+          measurementPolicy: { heapSamplePeriodMs: 100, workerMemorySamplePeriodMs: 250,
+            browserMemoryEnabled: Boolean(options.measureBrowserMemory), browserMemorySamplePeriodMs: 1000,
+            stageInstrumentation: true, processMetricsEnabled: Boolean(options.measureCpu),
+            motionCoverageSamplePeriodMs: COVERAGE_PERIOD_MS, motionCoverageCompleteThresholdPercent: COMPLETE_COVERAGE * 100 },
           batchId,
           recordedAt: new Date().toISOString(),
           library: adapter.library,
@@ -251,6 +281,9 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           cameraWaypoints: CAMERA_WAYPOINTS.map(({ center, zoom }) => ({ center: [...center], zoom })),
           pointsPerLayer: options.pointsPerLayer,
           mapCount,
+          viewportLayout: adapter.viewportLayout?.() ?? { mode: 'fixed-total' },
+          totalViewportCssPixels: (adapter.viewports?.() ?? [size]).reduce((sum, view) => sum + view.width * view.height, 0),
+          totalViewportDevicePixels: (adapter.viewports?.() ?? [size]).reduce((sum, view) => sum + view.width * view.height, 0) * window.devicePixelRatio ** 2,
           synchronizedCamera: true,
           ...mapInitialization,
           mapInitPolicy: adapter.initializeMaps ? 'destroy all maps before each trial, including warm-up; fresh native instances; sequential initialization; basemap and preview stations hidden' : 'adapter does not provide map reset',
@@ -287,6 +320,7 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           colorRestyleReadySignal: options.colorRestyle && canRestyle ? 'all raster and native map readiness, then two animation frames; presentation proxy' : null,
           colorRestyleSubmitMs,
           colorRestyleReadyMs,
+          ...prefixedReadiness('colorRestyle', colorRestyleReadiness),
           colorRestyleStartMs: colorRestyleStart == null ? null : colorRestyleStart - start,
           ...prefixedFrames('colorRestyle', restyleIntervals),
           timeChangeEnabled: Boolean(change),
@@ -298,7 +332,12 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           rasterUpdateMethod: change?.rasters ? 'replace overlays with the selected forecast time' : null,
           timeChangeSubmitMs,
           timeChangeReadyMs,
+          ...prefixedReadiness('timeChange', timeChangeReadiness),
           preChangeSettleMs,
+          postMotionSettleMs,
+          postMotionRasterCatchUpMs: rasters.length ? postMotionSettleMs : null,
+          ...prefixedReadiness('postMotion', postMotionReadiness),
+          ...motionCoverageResult,
           ...prefixedFrames('beforeChange', before),
           ...prefixedFrames('afterChange', after),
           ...prefixedFrames('timeChange', updateIntervals),
@@ -307,6 +346,9 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           basemap: 'disabled',
           submitMs,
           layerReadyMs,
+          ...mapReadiness,
+          mapReadinessStatus: mapReadiness.mapReadiness.length ? 'measured: independent per-map raster and native readiness' : 'unavailable: adapter has no per-map readiness',
+          mapReadinessSignal: 'per-map raster completion then native readiness; color restyle includes two per-map animation frames; not physical GPU presentation',
           trialMs: end - start,
           ...summarizeFrames(intervals),
           ...longTasks,
@@ -319,6 +361,8 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           colorRestyleTransferBytes: networkResult.colorRestyleNetwork?.transferBytes ?? null,
           colorRestyleFetchedBodyBytes: networkResult.colorRestyleNetwork?.fetchedBodyBytes ?? null,
           ...telemetryResult,
+          ...memoryResult,
+          ...stageResult,
           heapBeforeBytes,
           heapAfterBytes,
           heapDeltaBytes: heapBeforeBytes === null || heapAfterBytes === null ? null : heapAfterBytes - heapBeforeBytes,
@@ -335,14 +379,33 @@ export async function runBenchmark(adapter, options, { signal, onProgress = () =
           colorRestyleFrameIntervalsMs: restyleIntervals,
         };
         results.push(result);
-        onResult(result);
+        completed = true;
+        await onResult(result);
+      } catch (error) {
+        if (completed) throw error;
+        const failedEnd = performance.now();
+        const diagnostic = { schemaVersion: 10, recordType: signal.aborted ? 'aborted' : 'failed',
+          batchId, repetition, warmup, library: adapter.library, mapCount, recordedAt: new Date().toISOString(),
+          failureType: error.name, observedDurationMs: failedEnd - start,
+          ...motionCoverage.finish(),
+          ...network.finish(start, failedEnd, timeChangeStart, timeChangeEnd ?? failedEnd, colorRestyleStart, colorRestyleEnd ?? failedEnd),
+          ...memory.finish(start, failedEnd),
+          ...stages.finish(start, failedEnd, timeChangeStart, timeChangeEnd ?? failedEnd, colorRestyleStart, colorRestyleEnd ?? failedEnd) };
+        // Stop ongoing readers/requests before polling server failure counters.
+        adapter.clearRasters?.();
+        failureClearedRasters = true;
+        Object.assign(diagnostic, await telemetry.finish({ ignoreAbort: true }));
+        await onFailure(diagnostic);
+        throw error;
       } finally {
+        memory.disconnect(); stages.disconnect();
         tasks?.disconnect();
         network.disconnect();
       }
     }
     return results;
   } finally {
-    try { adapter.clearPoints(); adapter.clearRasters?.(); } finally { adapter.restore(snapshot); }
+    adapter.setRequestScope?.(undefined);
+    try { adapter.clearPoints(); if (!failureClearedRasters) adapter.clearRasters?.(); } finally { adapter.restore(snapshot); }
   }
 }

@@ -40,8 +40,6 @@ def make_handler(root: Path, grib_root: Path | None = None):
                 self.serve_file(path, ranges=True)
             except ValueError as error:
                 self.send_error(400, str(error))
-            except (BrokenPipeError, ConnectionResetError):
-                pass
     return CogHandler
 
 

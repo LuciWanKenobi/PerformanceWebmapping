@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
 import { COLOR_TABLES } from './shared/color-tables.js';
+import { supportsRasterConnections } from './shared/benchmark/server-policy.js';
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,8 +45,10 @@ export async function probeService(spec) {
       throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; PNG tiles must be precomputed and read-only. Stop the existing server, then rerun npm run start:all.');
     }
     if (['cog', 'wms'].includes(spec.service)) {
-      const metrics = await fetch(spec.url + '/metrics', { signal: AbortSignal.timeout(1500) });
-      if (!metrics.ok || !(await metrics.json()).cacheIsolationSupported) throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; cache isolation is required.');
+      const response = await fetch(spec.url + '/metrics', { signal: AbortSignal.timeout(1500) });
+      const metrics = response.ok ? await response.json() : null;
+      if (!metrics?.cacheIsolationSupported) throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; cache isolation is required.');
+      if (!supportsRasterConnections(metrics)) throw new Error('Restart the updated ' + spec.name + ' at ' + spec.url + '; HTTP/1.1 connection handling and disconnect accounting are required.');
     }
   }
   return true;

@@ -9,10 +9,11 @@ import math
 from pathlib import Path
 import re
 import threading
+import time
 from urllib.parse import parse_qs, unquote, urlsplit
 import xml.etree.ElementTree as ET
 
-from http_common import LocalHandler, run_server
+from http_common import CLIENT_DISCONNECTS, LocalHandler, run_server
 from raster_pipeline import (DATA_DIR, MERCATOR_LIMIT, atomic_write, cache_key,
                              cached_tile, load_catalog, render_png, tile_bounds, styled_layer, COLOR_TABLES)
 
@@ -178,11 +179,11 @@ def make_handler(root: Path, cache: Path, catalog=None):
                     self.send_error(404, "Use /wms, /tiles/<layer>/<z>/<x>/<y>.png or /catalog.json")
             except (ValueError, KeyError) as error:
                 self.exception(str(error))
-            except (BrokenPipeError, ConnectionResetError):
-                pass
+            except CLIENT_DISCONNECTS:
+                raise  # LocalHandler records the disconnect and closes once.
             except Exception as error:
                 self.log_error("Raster request failed: %s", error)
-                self.send_json({"error": "Raster rendering failed. Check the server log and input COGs."}, 500)
+                self.server_error("Raster rendering failed. Check the server log and input COGs.")
 
         def wms(self, params):
             if params.get("SERVICE", "WMS").upper() != "WMS":
@@ -201,8 +202,10 @@ def make_handler(root: Path, cache: Path, catalog=None):
                 tile = aligned_tile(bbox) if crs == "EPSG:3857" and width == height == 256 and transparent else None
                 with render_slots:
                     if self.isolated_request():
-                        self.send_bytes(render_png(root, layer, bbox, width, height, crs,
-                                                   transparent, background), "image/png")
+                        start = time.perf_counter()
+                        pixels = render_png(root, layer, bbox, width, height, crs, transparent, background)
+                        self._server_render_ms = (time.perf_counter() - start) * 1000
+                        self.send_bytes(pixels, "image/png")
                         return
                     if tile:
                         path = cached_tile(root, cache, layer, *tile)

@@ -1,4 +1,5 @@
 // Share compiled code across layer workers, but never their instances or memory.
+import { timedStage } from './benchmark/measurements.js';
 export function createGribModuleLoader(wasmUrl, fetchFile = fetch) {
   let modulePromise;
   return () => {
@@ -7,9 +8,10 @@ export function createGribModuleLoader(wasmUrl, fetchFile = fetch) {
         const response = await fetchFile(typeof wasmUrl === 'function' ? await wasmUrl() : wasmUrl);
         if (!response.ok) throw new Error(`GRIB2 decoder returned HTTP ${response.status}.`);
         if (response.headers.get('Content-Type') === 'application/wasm' && WebAssembly.compileStreaming) {
-          return WebAssembly.compileStreaming(response);
+          return timedStage('decoderCompile', () => WebAssembly.compileStreaming(response));
         }
-        return WebAssembly.compile(await response.arrayBuffer());
+        const bytes = await response.arrayBuffer();
+        return timedStage('decoderCompile', () => WebAssembly.compile(bytes));
       })().catch((error) => {
         // A temporary download/compilation failure must not poison later layers.
         modulePromise = undefined;

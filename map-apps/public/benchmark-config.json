@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "name": "thesis-core",
+  "frameworks": ["maplibre", "mapbox", "openlayers", "leaflet"],
+  "rasterPaths": ["xyz", "cog", "grib"],
+  "mapCounts": [1, 2, 5, 10, 20],
+  "repetitions": 5,
+  "warmup": true,
+  "pointsPerLayer": 5000,
+  "durationSeconds": 30,
+  "colorRestyle": true,
+  "measureCpu": true,
+  "measureServerMetrics": true,
+  "measureBrowserMemory": false,
+  "viewport": { "mode": "fixed-total", "mapWidth": 400, "mapHeight": 300 },
+  "forecast": { "run": null, "initialTime": "2026-10-05T03:00:00+00:00", "nextTime": "2026-10-06T15:00:00+00:00" },
+  "timeChange": { "fraction": 0.5, "points": true, "rasters": true },
+  "parameters": {
+    "cape": { "variable": "cape_con", "levelType": "surface", "level": 0, "message": 1 },
+    "cloud": { "variable": "clct", "levelType": "surface", "level": 0, "message": 1 },
+    "humidity": { "variable": "relhum_2m", "levelType": "heightAboveGround", "level": 2, "message": 1 },
+    "temperature": { "variable": "t_2m", "levelType": "heightAboveGround", "level": 2, "message": 1 },
+    "surfacePressure": { "variable": "ps", "levelType": "surface", "level": 0, "message": 1 },
+    "precipitation": { "variable": "tot_prec", "levelType": "surface", "level": 0, "message": 1 },
+    "gusts": { "variable": "vmax_10m", "levelType": "heightAboveGround", "level": 10, "message": 1 },
+    "weather": { "variable": "ww", "levelType": "surface", "level": 0, "message": 1 }
+  },
+  "scenes": [
+    { "id": "I", "rasters": ["cape"], "pointLayers": 0 },
+    { "id": "II_A", "rasters": ["cape"], "pointLayers": 1 },
+    { "id": "II_B", "rasters": ["cape", "cloud"], "pointLayers": 0 },
+    { "id": "III", "rasters": ["cape", "cloud", "temperature"], "pointLayers": 0 },
+    { "id": "V", "rasters": ["cape", "cloud", "humidity", "temperature", "surfacePressure"], "pointLayers": 0 },
+    { "id": "VIII", "rasters": ["cape", "cloud", "humidity", "temperature", "surfacePressure", "precipitation", "gusts", "weather"], "pointLayers": 0 },
+    { "id": "IX", "rasters": ["cape", "cloud", "humidity", "temperature", "surfacePressure", "precipitation", "gusts", "weather"], "pointLayers": 1 }
+  ]
+}

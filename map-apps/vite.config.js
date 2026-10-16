@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 
@@ -21,19 +21,24 @@ function eccodesWorkerLoader() {
   };
 }
 
-export default defineConfig({
-  base: './',
-  worker: { format: 'es', plugins: () => [eccodesWorkerLoader()] },
-  plugins: [eccodesWorkerLoader()],
-  build: {
-    rolldownOptions: {
-      input: {
-        home: fileURLToPath(new URL('./index.html', import.meta.url)),
-        maplibre: fileURLToPath(new URL('./maplibre/index.html', import.meta.url)),
-        mapbox: fileURLToPath(new URL('./mapbox/index.html', import.meta.url)),
-        openlayers: fileURLToPath(new URL('./openlayers/index.html', import.meta.url)),
-        leaflet: fileURLToPath(new URL('./leaflet/index.html', import.meta.url)),
+export default defineConfig(({ mode }) => {
+  const isolated = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_').VITE_ISOLATE_MEMORY === 'true';
+  const headers = isolated ? { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' } : {};
+  return {
+    base: './',
+    server: { headers }, preview: { headers },
+    worker: { format: 'es', plugins: () => [eccodesWorkerLoader()] },
+    plugins: [eccodesWorkerLoader()],
+    build: {
+      rolldownOptions: {
+        input: {
+          home: fileURLToPath(new URL('./index.html', import.meta.url)),
+          maplibre: fileURLToPath(new URL('./maplibre/index.html', import.meta.url)),
+          mapbox: fileURLToPath(new URL('./mapbox/index.html', import.meta.url)),
+          openlayers: fileURLToPath(new URL('./openlayers/index.html', import.meta.url)),
+          leaflet: fileURLToPath(new URL('./leaflet/index.html', import.meta.url)),
+        },
       },
     },
-  },
+  };
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { summarizeFrames, toCsv } from '../shared/benchmark/stats.js';
 import { resourceKind, resourceRecord, summarizeNetwork, observeNetwork, recordWorkerResource,
   observeWorkerResources } from '../shared/benchmark/network.js';
-import { cpuSummary, serverSummary, startTelemetry } from '../shared/benchmark/telemetry.js';
+import { cpuSummary, serverSummary, processSummary, startTelemetry } from '../shared/benchmark/telemetry.js';
 
 test('FPS lows average slowest tails, rather than inverting percentile thresholds', () => {
   const frames = [...Array(95).fill(16), 100, 100, 100, 100, 200];
@@ -229,4 +229,75 @@ test('final color restyle network requests have their own phase and totals', (t)
   assert.equal(row.timeChangeNetwork.requestCount, 1);
   assert.equal(row.colorRestyleNetwork.requestCount, 1);
   assert.equal(row.colorRestyleNetwork.fetchedBodyBytes, 2048);
+});
+
+test('concurrent data fetch intervals form a union while transfer/render work is summed', () => {
+  const records = [[10, 40], [20, 60], [80, 90]].map(([startTime, responseEnd]) =>
+    resourceRecord(resource({ startTime, responseEnd, responseStart: startTime + 5,
+      serverTiming: [{ name: 'render', duration: 3 }] }), 1000));
+  records.push(resourceRecord(resource({ name: 'http://app/decoder.wasm', startTime: 0, responseEnd: 200 }), 1000, 'window', 'http://app'));
+  const result = summarizeNetwork(records);
+  assert.equal(result.dataFetchActiveMs, 60);
+  assert.equal(result.dataBodyTransferMs, 65);
+  assert.equal(result.serverRenderMs, 9);
+  assert.equal(summarizeNetwork([resourceRecord(resource({ responseStart: 0 }), 1000)]).dataBodyTransferMs, null);
+});
+
+test('process CPU uses identities, core normalization and trial samples without summing independent RSS peaks', () => {
+  const processes = [
+    { identity: '1:100', role: 'browser-renderer', cpuSeconds: 10, rssBytes: 100 },
+    { identity: '2:100', role: 'browser-gpu-process', cpuSeconds: 10, rssBytes: 100 },
+    { identity: '3:100', role: 'wms-png-server', cpuSeconds: 10, rssBytes: 200 },
+  ];
+  const before = { monotonicMs: 1000, processes };
+  const sample = (monotonicMs, renderer, gpu) => ({ monotonicMs, groups: [
+    { role: 'browser-renderer', rssBytes: renderer, cpuPercent: 40 },
+    { role: 'browser-gpu-process', rssBytes: gpu, cpuPercent: 20 },
+  ] });
+  const after = { monotonicMs: 2000, logicalCpuCount: 4,
+    processes: processes.map((item) => ({ ...item, cpuSeconds: item.cpuSeconds + 0.5 })),
+    processSamples: [sample(900, 9000, 9000), sample(1250, 500, 100), sample(1750, 100, 400)] };
+  const result = processSummary(before, after);
+  assert.equal(result.browserCpuMeanPercent, 25);
+  assert.equal(result.serverCpuMeanPercent, 12.5);
+  assert.equal(result.browserRssPeakBytes, 600);
+  assert.equal(result.processMetrics[0].cpuMeanPercent, 50);
+  assert.equal(result.processMetrics[0].cpuPeakPercent, 40);
+  assert.equal(result.processSamples.length, 2);
+  const changed = processSummary(before, { ...after, processes: [{ ...processes[0], identity: '1:200' }] });
+  assert.equal(changed.browserCpuMeanPercent, null);
+  assert.ok(changed.processMetrics.every(({ counterCoverage }) => counterCoverage.startsWith('partial')));
+  assert.equal(processSummary(null, after).browserRssPeakBytes, null);
+});
+
+test('trial-specific server counters include failures and aborts even for an interrupted trial', async (t) => {
+  const controller = new AbortController(), urls = [];
+  let count = 0;
+  replaceGlobals(t, { fetch: async (url) => {
+    urls.push(url);
+    const initial = count++ === 0;
+    return { ok: true, json: async () => ({ instance: 'scope', scopedMetricsSupported: true,
+      requestCount: initial ? 0 : 4, getRequestCount: initial ? 0 : 4,
+      rangeGetRequestCount: 0, completedRequestCount: initial ? 0 : 3,
+      bodyBytesSent: initial ? 0 : 100, abortedRequestCount: initial ? 0 : 2,
+      disconnectAccountingSupported: true, clientDisconnectedRequestCount: initial ? 0 : 2,
+      truncatedResponseCount: initial ? 0 : 1, handlerErrorCount: initial ? 0 : 0,
+      connectionPolicy: { version: 1, httpProtocol: 'HTTP/1.1', requestQueueSize: 256, socketTimeoutSeconds: 30, tcpNoDelay: true },
+      responseStatuses: initial ? {} : { '200': 1, '404': 1, '0': 1 } }) };
+  } });
+  const session = await startTelemetry({ rasters: [{ mode: 'wms' }], requestScope: 'private-trial', signal: controller.signal });
+  controller.abort(new Error('Stopped'));
+  const row = await session.finish({ ignoreAbort: true });
+  assert.ok(urls.every((url) => url.endsWith('/metrics?scope=private-trial')));
+  assert.equal(row.serverRequestCount, 4);
+  assert.equal(row.serverFailedResponseCount, 1);
+  assert.equal(row.serverIncompleteRequestCount, 1);
+  assert.equal(row.serverAbortedRequestCount, 2);
+  assert.equal(row.serverClientDisconnectedRequestCount, 2);
+  assert.equal(row.serverTruncatedResponseCount, 1);
+  assert.equal(row.serverHandlerErrorCount, 0);
+  assert.equal(row.serverNoResponseCount, 1);
+  assert.equal(row.serverConnectionPolicies[0].httpProtocol, 'HTTP/1.1');
+  assert.ok(row.serverMetricsScope.startsWith('this trial only'));
+  assert.ok(!JSON.stringify(row).includes('private-trial'));
 });

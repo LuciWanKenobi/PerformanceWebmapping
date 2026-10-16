@@ -19,7 +19,7 @@ python test_data/serve_cog.py
 python test_data/serve_wms.py
 ```
 
-For optional whole-machine CPU measurements, start the helper in another terminal:
+For optional system/process CPU and process RAM measurements, start the helper in another terminal:
 
 ```powershell
 python test_data/serve_metrics.py
@@ -29,6 +29,12 @@ It uses `psutil` to sample system utilization every 250 ms on port 8004. The
 benchmark reads CPU counters before/after each trial and exports mean, peak,
 p95, last sample and raw samples. This includes other applications and local
 servers, not just the test tab. CPU values are n/a if the helper is not running.
+The updated helper also groups all running browser renderer, GPU and other
+processes separately from COG/GRIB and WMS/PNG servers. CPU counter deltas and
+250 ms RSS/CPU samples are exported without raw command lines. Per-role CPU
+uses 100% per logical core; browser/server totals are normalized to all cores.
+Processes starting/exiting produce partial counter coverage. Summed RSS can
+double-count shared pages and excludes GPU VRAM. Restart the helper after updating.
 
 Start the app in a third terminal:
 
@@ -53,7 +59,7 @@ benchmark multiple rasters together with points and optional forecast-time chang
 | `serve_cog.py` | `cog/`, `grib2/` | `http://127.0.0.1:8001/catalog.json`, `/cog/<relative-path>.tif`, `/grib2/<relative-path>.grib2` |
 | `generate_wms_tiles.py` | COG catalog and rasters | `wms_tiles/<layer-id>/<cache-key>/<z>/<x>/<y>.png`, `tiles.json` |
 | `serve_wms.py` | COGs for WMS; precomputed PNG files for XYZ | `http://127.0.0.1:8002/wms`, `/catalog.json`, `/tiles/<layer-id>/<z>/<x>/<y>.png` |
-| `serve_metrics.py` | OS system CPU counters | `http://127.0.0.1:8004/cpu`, `/cpu?since=<monotonic-ms>` |
+| `serve_metrics.py` | OS system/process CPU and process RSS | `http://127.0.0.1:8004/cpu`, `/cpu?since=<monotonic-ms>` |
 
 Each GRIB message becomes a separate single-band Float32 COG, retaining the run
 directory, geographic cell centres, original units, level and valid/reference
@@ -95,10 +101,41 @@ raster requests received, GETs, range GETs, completed response statuses and
 successfully written body bytes. They exclude metric polling, catalog, health
 and capabilities routes. HEAD/OPTIONS count as requests, with no body bytes;
 304 revalidation responses also send no body. Counters are thread-safe, scoped
-to one server instance, and reset on restart. The benchmark computes differences
-between snapshots, so avoid concurrent test clients. Body bytes exclude HTTP
-headers and are server-written bytes rather than guaranteed client receipts.
+to one server instance, and reset on restart. The benchmark adds a private
+`_benchmark_scope` to data URLs and reads `/metrics?scope=...` snapshots so unrelated
+clients are excluded. Aggregate `/metrics` remains available. Scope histories
+are bounded to the latest 512 scopes. Failures, incomplete requests and truncated
+successful response bodies are counted separately. WMS exposes render duration
+through `Server-Timing`; CORS, CORP and Timing-Allow-Origin expose it to local apps
+and support their optional cross-origin-isolated memory mode. Body bytes exclude
+HTTP headers and are server-written bytes rather than guaranteed client receipts.
 Restart both data servers after updating these helpers.
+
+The local services use HTTP/1.1 persistent connections with explicit response
+lengths, a 256-connection accept backlog, TCP_NODELAY and a 30-second socket
+timeout. Connection reuse does not share map sources, readers or cached raster
+data: isolated requests still open/read their own prepared files and use
+`Cache-Control: no-store`. `/metrics` exports this `connectionPolicy`; the app and
+launcher reject older raster services until they are restarted.
+
+Metrics schema 2 distinguishes `clientDisconnectedRequestCount`,
+`truncatedResponseCount` and `handlerErrorCount`. Windows connection aborts
+(including WinError 10053), resets and broken pipes close the connection without
+writing a second response or inventing HTTP 500. A disconnect before any response
+has status `0` (no HTTP status), while a partially sent response retains its
+original status. HTTP 4xx/5xx remain actual error responses. Unexpected server
+errors after headers close the incomplete body and increment handler-error
+counters. `completedRequestCount` counts finished request handlers, including
+errors and disconnects; `abortedRequestCount` includes detected disconnects and
+truncated bodies. These categories can overlap. Body bytes count completed
+server writes and can undercount a partially completed socket write.
+
+The server cannot infer whether a client disconnect was an intentional
+supersession, a navigation or a transport failure. Browser renderer-confirmed
+tile cancellations stay in separate superseded-work counters. Genuine fetch
+failures still invalidate the trial. Missing prepared GL tiles also explicitly
+fail the benchmark, even when a native renderer would otherwise hide a 404 and
+fall back to another zoom. No automatic retries are added.
 
 Example using the supplied dataset:
 

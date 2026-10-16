@@ -8,6 +8,8 @@ import { createLeafletAdapter } from './leaflet-adapter.js';
 import { createCogReader, xyzBounds } from '../cog-reader.js';
 import { createGribReader } from '../grib-reader.js';
 import { afterFrames, waitUntil } from './timing.js';
+import { recordAllocation, timedStage } from './measurements.js';
+import { trackLeafletTiles } from './raster-coverage-adapters.js';
 
 import { cogUrl, gribUrl, weatherTileUrl, rasterUrl } from '../weather.js';
 import { stationContent, setStatus, TILE_ERROR_MESSAGE } from '../ui.js';
@@ -43,13 +45,19 @@ export function createLeafletMapFactory(stations) {
           const reader = mode === 'cog' ? createCogReader(cogUrl(layer), layer)
             : createGribReader(gribUrl(layer), layer);
           let removed = false;
+          const canvases = new Map();
+          const forgetCanvas = (canvas) => { recordAllocation(canvases.get(canvas), null); canvases.delete(canvas); };
           const CogGrid = L.GridLayer.extend({
             createTile(coords, done) {
               const canvas = L.DomUtil.create('canvas', 'leaflet-tile');
               canvas.width = canvas.height = 256;
+              const allocationId = crypto.randomUUID();
+              canvases.set(canvas, allocationId);
+              recordAllocation(allocationId, { canvasPixelBytes: 256 * 256 * 4 });
               reader.render(xyzBounds(coords.z, coords.x, coords.y), 256, 256).then((pixels) => {
                 if (removed) return;
-                canvas.getContext('2d').putImageData(new ImageData(pixels, 256, 256), 0, 0);
+                timedStage('upload', () => canvas.getContext('2d').putImageData(new ImageData(pixels, 256, 256), 0, 0),
+                  { mode, mapIndex: layer.mapIndex ?? null, layerId: layer.id });
                 done(null, canvas);
               }).catch((error) => { if (!removed) { onError(error); done(error, canvas); } });
               return canvas;
@@ -57,8 +65,12 @@ export function createLeafletMapFactory(stations) {
           });
           const tiles = new CogGrid({ tileSize: 256, opacity: 0.7, maxZoom: 19, maxNativeZoom,
             attribution: 'DWD ICON forecast', noWrap: true,
-            bounds: [[layer.bounds[1], layer.bounds[0]], [layer.bounds[3], layer.bounds[2]]] }).addTo(map);
+            bounds: [[layer.bounds[1], layer.bounds[0]], [layer.bounds[3], layer.bounds[2]]] })
+            .on('tileunload', ({ tile }) => forgetCanvas(tile));
+          const tracking = trackLeafletTiles(map, tiles, layer);
+          tiles.addTo(map);
           return {
+            sampleCoverage: tracking.sampleCoverage, workStats: tracking.workStats,
             async restyle() {
               await reader.restyle(colorTableStyle(layer));
               tiles.redraw();
@@ -69,7 +81,7 @@ export function createLeafletMapFactory(stations) {
               await waitUntil(() => !tiles.isLoading(), signal);
               await afterFrames(2, signal);
             },
-            remove() { removed = true; reader.dispose(); map.removeLayer(tiles); },
+            remove() { tracking.dispose(); removed = true; reader.dispose(); map.removeLayer(tiles); [...canvases.keys()].forEach(forgetCanvas); },
             setVisible(visible) { if (visible) tiles.addTo(map); else map.removeLayer(tiles); },
           };
         }
@@ -79,15 +91,17 @@ export function createLeafletMapFactory(stations) {
           ? L.tileLayer.wms(rasterUrl(`${WMS_SERVER}/wms`, layer), { ...options, layers: layer.id, styles: '',
             format: 'image/png', transparent: true, version: '1.1.1', crs: L.CRS.EPSG3857 })
           : L.tileLayer(weatherTileUrl(layer, mode), options);
+        const tracking = trackLeafletTiles(map, tiles, layer);
         tiles.on('tileerror', onError).addTo(map);
         return {
+          sampleCoverage: tracking.sampleCoverage, workStats: tracking.workStats,
           restyle: mode === 'wms' ? () => tiles.setParams({ styles: 'benchmark' }) : undefined,
           async settle(signal) {
             await afterFrames(2, signal);
             await waitUntil(() => !tiles.isLoading(), signal);
             await afterFrames(2, signal);
           },
-          remove() { map.removeLayer(tiles); tiles.off('tileerror', onError); },
+          remove() { tracking.dispose(); map.removeLayer(tiles); tiles.off('tileerror', onError); },
           setVisible(visible) { if (visible) tiles.addTo(map); else map.removeLayer(tiles); },
         };
       };

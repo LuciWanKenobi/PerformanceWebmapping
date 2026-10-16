@@ -1,7 +1,7 @@
 """Integration checks using real ecCodes, COG IO and HTTP requests."""
 from contextlib import contextmanager
+from http.client import RemoteDisconnected
 import bz2
-from http.server import ThreadingHTTPServer
 import io
 import json
 from pathlib import Path
@@ -26,6 +26,7 @@ from raster_pipeline import styled_layer, COLOR_TABLES, cache_key, cached_tile, 
 from serve_cog import make_handler as cog_handler
 from serve_wms import make_handler as wms_handler
 from serve_metrics import make_handler as metrics_handler, cpu_counters
+from http_common import LocalHTTPServer
 from collections import namedtuple
 
 
@@ -34,7 +35,7 @@ def service(handler):
     class QuietHandler(handler):
         def log_message(self, *args):
             pass
-    server = ThreadingHTTPServer(("127.0.0.1", 0), QuietHandler)
+    server = LocalHTTPServer(("127.0.0.1", 0), QuietHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -307,6 +308,20 @@ class RasterServicesTest(unittest.TestCase):
                     self.assertEqual(request(url + "?style=" + style)[0], 400)
                 self.assertEqual(request(url, method="HEAD")[0], 404)
             self.assertFalse(cache.exists())
+
+    def test_xyz_windows_disconnect_does_not_become_a_500(self):
+        handler = wms_handler(self.cog, self.cache)
+        with patch.object(handler, 'serve_file', side_effect=ConnectionAbortedError(10053, 'client closed')), \
+                patch.object(handler, 'server_error') as server_error, service(handler) as base:
+            url = base + f"/tiles/{self.layer['id']}/5/16/10.png?_benchmark_scope=disconnect"
+            with self.assertRaises(RemoteDisconnected):
+                request(url)
+            server_error.assert_not_called()
+            result = json.loads(request(base + '/metrics?scope=disconnect')[2])
+            self.assertEqual(result['clientDisconnectedRequestCount'], 1)
+            self.assertEqual(result['abortedRequestCount'], 1)
+            self.assertEqual(result['handlerErrorCount'], 0)
+            self.assertEqual(result['responseStatuses'], {'0': 1})
 
     def test_parameter_table_changes_png_values_and_keeps_alpha_and_separate_cache(self):
         alternative = styled_layer(self.layer, "benchmark")

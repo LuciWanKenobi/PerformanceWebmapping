@@ -23,6 +23,7 @@ import { createOpenLayersAdapter } from './openlayers-adapter.js';
 import { createGribReader } from '../grib-reader.js';
 import { xyzBounds } from '../cog-reader.js';
 import { waitForMapEvent } from './timing.js';
+import { trackOpenLayersTiles } from './raster-coverage-adapters.js';
 
 import { cogUrl, gribUrl, weatherTileUrl, cogStyle, rasterUrl } from '../weather.js';
 import { stationContent, setStatus, TILE_ERROR_MESSAGE } from '../ui.js';
@@ -105,8 +106,10 @@ export function createOpenLayersMapFactory(stations) {
         overlay.setExtent(transformExtent(layer.bounds, 'EPSG:4326', 'EPSG:3857'));
         source.on('tileloaderror', onError);
         source.on('error', onError);
+        const tracking = trackOpenLayersTiles(map, overlay, source, layer, transformExtent);
         map.getLayers().insertAt(1, overlay);
         return {
+          sampleCoverage: tracking.sampleCoverage, workStats: tracking.workStats,
           restyle: mode === 'xyz' ? undefined : async () => {
             const styled = restyledLayer(layer);
             if (mode === 'cog') overlay.setStyle(cogStyle(styled));
@@ -121,7 +124,7 @@ export function createOpenLayersMapFactory(stations) {
             await waitForMapEvent({ on: map.on.bind(map), off: map.un.bind(map),
               trigger: () => map.render() }, 'rendercomplete', signal);
           },
-          remove() { reader?.dispose(); map.removeLayer(overlay); overlay.dispose(); source.dispose(); },
+          remove() { tracking.dispose(); reader?.dispose(); map.removeLayer(overlay); overlay.dispose(); source.dispose(); },
           setVisible(visible) { overlay.setVisible(visible); },
         };
       };

@@ -71,3 +71,13 @@ h1 { font-size: 1.5rem; margin: 0; }
   .map-workspace .map-frame { min-height: 50vh; }
   .benchmark-panel { border-left: none; border-top: 1px solid #d1d9e0; overflow: visible; }
 }
+
+/* Use the entire browser content viewport during both manual and suite runs. */
+.map-app.benchmark-running { overflow: hidden; }
+.benchmark-running > .toolbar, .benchmark-running > .status,
+.benchmark-running .benchmark-panel, .benchmark-running .map-caption,
+.benchmark-running .leaflet-control-container, .benchmark-running .mapboxgl-control-container,
+.benchmark-running .maplibregl-control-container, .benchmark-running .ol-control,
+.benchmark-running .ol-overlaycontainer-stopevent { display: none !important; }
+.benchmark-running .map-workspace { position: fixed; inset: 0; display: block; width: 100vw; height: 100dvh; overflow: hidden; }
+.benchmark-running .map-frame { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; }

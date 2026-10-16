@@ -4,6 +4,14 @@ export function percentile(values, percent) {
   return sorted[Math.max(0, Math.ceil((percent / 100) * sorted.length) - 1)];
 }
 
+export function summarizeMapReadiness(mapReadiness = []) {
+  const times = mapReadiness.map(({ readyMs }) => readyMs);
+  const firstMapReadyMs = times.length ? Math.min(...times) : null;
+  const lastMapReadyMs = times.length ? Math.max(...times) : null;
+  return { firstMapReadyMs, lastMapReadyMs,
+    mapReadySpreadMs: times.length ? lastMapReadyMs - firstMapReadyMs : null, mapReadiness };
+}
+
 export function summarizeFrames(intervals) {
   const elapsed = intervals.reduce((sum, value) => sum + value, 0);
   const slowest = [...intervals].sort((a, b) => b - a);
@@ -34,7 +42,7 @@ export function summarizeFrames(intervals) {
 export function toCsv(rows) {
   if (!rows.length) return '';
   const columns = [...new Set(rows.flatMap(Object.keys))].filter((key) =>
-    !/frameIntervalsMs$/i.test(key) && !['networkRequests', 'systemCpuSamples'].includes(key));
+    !/frameIntervalsMs$/i.test(key) && !['networkRequests', 'systemCpuSamples', 'memorySamples', 'userAgentMemorySamples', 'stageMeasurements', 'processSamples', 'motionCoverageSamples'].includes(key));
   const cell = (value) => {
     let text = value == null ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
     // Prevent spreadsheet formula interpretation of text fields.

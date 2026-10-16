@@ -72,11 +72,14 @@ test('multiple GL canvases await actual pixels and coalesce rapid viewport chang
   await new Promise(setImmediate);
   assert.equal(jobs.length, 4); // Exactly one follow-up for the latest view on each layer.
   assert.equal(uploads, 0); // Obsolete views cannot overwrite current pixels.
+  assert.equal(overlayA.workStats()[0].count, 1);
+  assert.deepEqual(overlayA.sampleCoverage().rectangles, []);
   assert.equal(ready, false);
   jobs[2](pixels); jobs[3](pixels);
   await completion;
   assert.equal(uploads, 2);
   assert.equal(ready, true);
+  assert.equal(overlayA.sampleCoverage().rectangles.length, 1);
   assert.equal(sources.size, 2);
 });
 
@@ -127,7 +130,11 @@ test('worker fetches original GRIB once and transfers colored pixels for repeate
     try {
       worker.postMessage({ type: 'init', layer: fixture.layer,
         url: `http://127.0.0.1:${server.address().port}/temperature.grib2` });
-      assert.equal((await once(worker, 'message'))[0].type, 'ready');
+      const [ready] = await once(worker, 'message');
+      assert.equal(ready.type, 'ready');
+      assert.equal(ready.measurements[0].kind, 'decode');
+      assert.equal(ready.memory.workerGridBytes, 8 * 8 * 4);
+      assert.ok(ready.memory.wasmCapacityBytes > 0);
       const limit = 20037508.342789244;
       const bbox = [4.5 / 180 * limit, mercatorY(46.5), 12.5 / 180 * limit, mercatorY(54.5)];
       let originalPixels;
@@ -135,6 +142,7 @@ test('worker fetches original GRIB once and transfers colored pixels for repeate
         worker.postMessage({ type: 'render', id, bbox, width: 8, height: 8 });
         const [result] = await once(worker, 'message');
         assert.equal(result.type, 'pixels'); assert.equal(result.id, id);
+        assert.equal(result.measurements[0].kind, 'projectColor');
         originalPixels = result.pixels;
         assert.ok(result.pixels instanceof Uint8ClampedArray);
         assert.equal(result.pixels.length, 8 * 8 * 4);
@@ -151,6 +159,9 @@ test('worker fetches original GRIB once and transfers colored pixels for repeate
       assert.deepEqual([...restyled.pixels].filter((_v, i) => i % 4 === 3),
         [...originalPixels].filter((_v, i) => i % 4 === 3));
       assert.equal(downloads, 1, 'changing tables recolors the retained decoded grid');
+      worker.postMessage({ type: 'metrics' });
+      const [metrics] = await once(worker, 'message');
+      assert.equal(metrics.type, 'metrics'); assert.equal(metrics.memory.gribWorker, true);
       worker.postMessage({ type: 'render', id: 3, bbox, width: 1000000, height: 1 });
       const [error] = await once(worker, 'message');
       assert.equal(error.type, 'error'); assert.equal(error.id, 3);

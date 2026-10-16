@@ -45,6 +45,8 @@ export function resourceRecord(entry, timeOrigin, context = 'window', pageOrigin
     cacheHit: exposed ? entry.transferSize === 0 && entry.decodedBodySize > 0 : null,
     status: entry.responseStatus > 0 ? entry.responseStatus : null,
     initiator: entry.initiatorType || 'unknown',
+    serverRenderMs: entry.serverTiming?.find(({ name }) => name === 'render')?.duration ?? null,
+    bodyTransferMs: entry.responseStart > 0 && entry.responseEnd >= entry.responseStart ? entry.responseEnd - entry.responseStart : null,
   };
 }
 
@@ -53,7 +55,18 @@ export function summarizeNetwork(records, available = true) {
     records.reduce((sum, entry) => sum + entry[key], 0);
   const durations = records.map((entry) => entry.durationMs);
   const ttfb = records.map((entry) => entry.ttfbMs).filter((value) => value != null);
+  const windows = records.filter((entry) => ['cog', 'grib', 'png', 'wms'].includes(entry.kind))
+    .map((entry) => [entry.startMs ?? entry.startEpochMs, entry.endMs ?? entry.endEpochMs])
+    .filter(([start, end]) => Number.isFinite(start) && Number.isFinite(end) && end >= start).sort((a, b) => a[0] - b[0]);
+  let activeMs = 0, lastEnd = -Infinity;
+  for (const [start, end] of windows) { activeMs += Math.max(0, end - Math.max(start, lastEnd)); lastEnd = Math.max(lastEnd, end); }
+  const renders = records.map(({ serverRenderMs }) => serverRenderMs).filter(Number.isFinite);
   return {
+    dataFetchActiveMs: windows.length ? activeMs : null,
+    dataBodyTransferMs: records.some(({ kind }) => ['cog', 'grib', 'png', 'wms'].includes(kind)) &&
+      records.filter(({ kind }) => ['cog', 'grib', 'png', 'wms'].includes(kind)).every(({ bodyTransferMs }) => bodyTransferMs != null)
+      ? records.filter(({ kind }) => ['cog', 'grib', 'png', 'wms'].includes(kind)).reduce((sum, entry) => sum + entry.bodyTransferMs, 0) : null,
+    serverRenderMs: renders.length ? renders.reduce((sum, value) => sum + value, 0) : null,
     requestCount: available ? records.length : null,
     dataRequestCount: available ? records.filter((entry) => ['cog', 'grib', 'png', 'wms'].includes(entry.kind)).length : null,
     decoderRequestCount: available ? records.filter((entry) => entry.kind === 'decoder').length : null,
@@ -114,6 +127,7 @@ export function observeNetwork() {
         colorRestyleNetwork: colorRestyleStart == null ? null : summarizeNetwork(requests.filter((entry) => entry.phase === 'colorRestyle'), available),
         timeChangeNetwork: timeChangeStart == null ? null : summarizeNetwork(changeRequests, available),
         networkRequests: requests,
+        networkCoverage: 'completed Resource Timing entries from window and instrumented GRIB workers; failed/aborted or native library worker requests may be absent. Scoped server counters include received failures and aborted responses.',
       };
     },
     disconnect() { observer?.disconnect(); workerSubscribers.delete(receive); },

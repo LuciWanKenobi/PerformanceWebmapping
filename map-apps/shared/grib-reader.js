@@ -1,5 +1,6 @@
 import { recordWorkerResource } from './benchmark/network.js';
 import { createGribModuleLoader } from './grib-wasm.js';
+import { recordStage, recordAllocation } from './benchmark/measurements.js';
 
 // Lazy, page-wide promise: concurrent layers and later trials reuse this code.
 const loadDecoderModule = createGribModuleLoader(async () =>
@@ -8,6 +9,9 @@ const loadDecoderModule = createGribModuleLoader(async () =>
 export function createGribReader(url, layer) {
   const worker = new Worker(new URL('./grib.worker.js', import.meta.url), { type: 'module' });
   const pending = new Map();
+  const allocationId = crypto.randomUUID();
+  recordAllocation(allocationId, { gribWorker: true });
+  const memoryTimer = setInterval(() => { if (!disposed && !failed) worker.postMessage({ type: 'metrics' }); }, 250);
   let sequence = 0, disposed = false, failed;
   let resolveReady, rejectReady;
   const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
@@ -15,11 +19,16 @@ export function createGribReader(url, layer) {
   ready.catch(() => {});
   function fail(error) {
     failed = error;
+    clearInterval(memoryTimer); recordAllocation(allocationId, null);
     rejectReady(error);
     for (const job of pending.values()) job.reject(error);
     pending.clear();
   }
   worker.onmessage = ({ data }) => {
+    if (disposed || failed) return;
+    if (data.memory) recordAllocation(allocationId, data.memory);
+    data.measurements?.forEach(recordStage);
+    if (data.type === 'metrics') return;
     if (data.type === 'resource') { recordWorkerResource(data.entry); return; }
     if (data.type === 'ready') { resolveReady(); return; }
     const job = pending.get(data.id);

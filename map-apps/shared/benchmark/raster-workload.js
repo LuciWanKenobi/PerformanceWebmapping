@@ -35,8 +35,11 @@ export function resolveRasterLayers(series, selections, time) {
 }
 
 export function createRasterWorkload(createOverlay) {
-  let overlays = [], failure, rejectFailure, errorPromise;
-  function clear() {
+  let overlays = [], failure, rejectFailure, errorPromise, retiredWork = [];
+  const currentWork = () => overlays.flatMap((overlay, rasterIndex) => (overlay.workStats?.() ?? [])
+    .map((counter) => ({ ...counter, rasterIndex, mode: overlay.mode })));
+  function clear(preserveTracking = false) {
+    retiredWork = preserveTracking ? [...retiredWork, ...currentWork()] : [];
     const previous = overlays;
     overlays = [];
     // Invalidate callbacks before removing workers and their pending requests.
@@ -45,7 +48,7 @@ export function createRasterWorkload(createOverlay) {
     for (const overlay of previous) overlay.remove();
   }
   function add(requests) {
-    clear();
+    clear(true);
     errorPromise = new Promise((_, reject) => { rejectFailure = reject; });
     errorPromise.catch(() => {});
     const reject = rejectFailure;
@@ -62,6 +65,11 @@ export function createRasterWorkload(createOverlay) {
   }
   return {
     add, clear,
+    sampleCoverage: () => overlays.flatMap((overlay, rasterIndex) => {
+      const values = overlay.sampleCoverage?.();
+      return (Array.isArray(values) ? values : [values ?? {}]).map((value) => ({ ...value, rasterIndex, mode: overlay.mode }));
+    }),
+    workStats: () => [...retiredWork, ...currentWork()],
     restyle(style) {
       if (failure) throw failure;
       // Precomputed RGB PNGs have no value-to-color restyle operation.
@@ -81,6 +89,15 @@ export function createRasterWorkload(createOverlay) {
           await overlay.settle(signal);
         })), errorPromise,
       ]), signal);
+      if (failure) throw failure;
+    },
+    async settleMap(mapIndex, signal) {
+      if (!overlays.length) return;
+      if (failure) throw failure;
+      await abortable(Promise.race([Promise.all(overlays.map((overlay) => {
+        if (!overlay.settleMap) throw new Error('Raster adapter does not provide per-map readiness.');
+        return overlay.settleMap(mapIndex, signal);
+      })), errorPromise]), signal);
       if (failure) throw failure;
     },
   };

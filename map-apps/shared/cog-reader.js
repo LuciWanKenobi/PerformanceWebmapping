@@ -3,6 +3,9 @@ import { planRasterCanvas, MERCATOR_LIMIT, latitudeAt, mercatorY } from './raste
 export { latitudeAt, mercatorY } from './raster-resolution.js';
 
 import { colorTableStyle } from './color-tables.js';
+import { timedStage, recordAllocation } from './benchmark/measurements.js';
+import { projectedBounds } from './benchmark/coverage.js';
+import { glViewBounds } from './benchmark/raster-coverage-adapters.js';
 
 // Numeric COG windows are fetched and colored here, entirely in the frontend.
 const LIMIT = MERCATOR_LIMIT;
@@ -59,6 +62,8 @@ export function projectRaster(values, window, origin, resolution, bbox, width, h
 
 export function createCogReader(url, layer) {
   const controller = new AbortController();
+  const allocationId = crypto.randomUUID();
+  const details = { mode: 'cog', mapIndex: layer.mapIndex ?? null, layerId: layer.id };
   let opening, style = layer.style, lastWindow;
   async function open() {
     if (!opening) opening = (async () => {
@@ -77,7 +82,7 @@ export function createCogReader(url, layer) {
   }
   return {
     restyle(nextStyle) { style = nextStyle; },
-    dispose() { controller.abort(); lastWindow = undefined; },
+    dispose() { controller.abort(); lastWindow = undefined; recordAllocation(allocationId, null); },
     async render(bbox, width, height) {
       controller.signal.throwIfAborted();
       const { images, origin } = await open();
@@ -101,10 +106,11 @@ export function createCogReader(url, layer) {
       ];
       const key = JSON.stringify([image.getWidth(), image.getHeight(), window]);
       const values = lastWindow?.key === key ? lastWindow.values
-        : await image.readRasters({ window, samples: [0], interleave: true, signal: controller.signal });
-      lastWindow = { key, values };
+        : await timedStage('readDecode', () => image.readRasters({ window, samples: [0], interleave: true, signal: controller.signal }), details);
       controller.signal.throwIfAborted();
-      return projectRaster(values, window, origin, resolution, bbox, width, height, style, layer.nodata);
+      lastWindow = { key, values };
+      recordAllocation(allocationId, { cogWindowBytes: values.byteLength });
+      return timedStage('projectColor', () => projectRaster(values, window, origin, resolution, bbox, width, height, style, layer.nodata), details);
     },
   };
 }
@@ -115,6 +121,7 @@ export function createGlCogOverlay(map, layer, url, onError, id = 'weather') {
 
 export function createGlRasterOverlay(map, layer, reader, onError, id = 'weather') {
   const canvas = document.createElement('canvas');
+  const allocationId = crypto.randomUUID();
   canvas.width = canvas.height = 1;
   map.addSource(id, { type: 'canvas', canvas, animate: false,
     coordinates: [[0, 1], [1, 1], [1, 0], [0, 0]] });
@@ -124,6 +131,7 @@ export function createGlRasterOverlay(map, layer, reader, onError, id = 'weather
   let removed = false, visible = true, revision = 0;
   let pause;
   let drawing, needsDraw = false, renderedKey;
+  let presentedBounds, shown = false, superseded = 0;
   function redraw() {
     revision++;
     needsDraw = true;
@@ -147,6 +155,7 @@ export function createGlRasterOverlay(map, layer, reader, onError, id = 'weather
     const north = Math.min(85.05112878, bounds.getNorth(), layer.bounds[3]);
     if (west >= east || south >= north) {
       renderedKey = undefined;
+      shown = false;
       map.setLayoutProperty(id, 'visibility', 'none');
       return;
     }
@@ -156,16 +165,19 @@ export function createGlRasterOverlay(map, layer, reader, onError, id = 'weather
     if (plan.overzoom && plan.key === renderedKey) return;
     try {
       const pixels = await reader.render(plan.bbox, plan.width, plan.height);
-      if (removed || !visible || current !== revision) return;
+      if (removed || !visible) return;
+      if (current !== revision) { superseded++; return; }
       canvas.width = plan.width; canvas.height = plan.height;
-      canvas.getContext('2d').putImageData(new ImageData(pixels, plan.width, plan.height), 0, 0);
+      timedStage('upload', () => canvas.getContext('2d').putImageData(new ImageData(pixels, plan.width, plan.height), 0, 0),
+        { mapIndex: layer.mapIndex ?? null, layerId: layer.id });
+      recordAllocation(allocationId, { canvasPixelBytes: plan.width * plan.height * 4 });
       const source = map.getSource(id);
       source.setCoordinates(plan.coordinates);
       renderedKey = plan.key;
       map.setLayoutProperty(id, 'visibility', 'visible');
       if (pause) map.off('render', pause);
       source.play();
-      pause = () => { if (!removed) source.pause(); };
+      pause = () => { if (!removed) { source.pause(); presentedBounds = plan.bbox; shown = true; } };
       map.once('render', pause);
       map.triggerRepaint();
     } catch (error) { if (!removed && current === revision && error.name !== 'AbortError') onError(error); }
@@ -175,6 +187,9 @@ export function createGlRasterOverlay(map, layer, reader, onError, id = 'weather
   redraw();
   return {
     ready: reader.ready,
+    sampleCoverage: () => ({ view: glViewBounds(map), extent: projectedBounds(layer.bounds),
+      rectangles: visible && shown && presentedBounds ? [presentedBounds] : [], method: 'GL numeric canvas footprint after native render' }),
+    workStats: () => [{ kind: 'discardedNumericRenders', count: superseded }],
     async restyle() {
       await reader.restyle(colorTableStyle(layer));
       renderedKey = undefined;
@@ -190,6 +205,7 @@ export function createGlRasterOverlay(map, layer, reader, onError, id = 'weather
     },
     remove() {
       removed = true; revision++; reader.dispose();
+      recordAllocation(allocationId, null);
       map.off('moveend', redraw); map.off('resize', redraw);
       if (pause) map.off('render', pause);
       map.removeLayer(id); map.removeSource(id);
